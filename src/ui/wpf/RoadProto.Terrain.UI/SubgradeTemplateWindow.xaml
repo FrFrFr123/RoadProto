@@ -92,6 +92,10 @@
                         <RowDefinition Height="34" />
                         <RowDefinition Height="34" />
                         <RowDefinition Height="34" />
+                        <RowDefinition Height="34" />
+                        <RowDefinition Height="34" />
+                        <RowDefinition Height="34" />
+                        <RowDefinition Height="34" />
                     </Grid.RowDefinitions>
 
                     <TextBlock Text="侧别" VerticalAlignment="Center" />
@@ -103,17 +107,14 @@
                     <TextBlock Grid.Row="2" Text="宽度" VerticalAlignment="Center" />
                     <TextBox x:Name="WidthBox" Grid.Row="2" Grid.Column="1" Height="26" TextChanged="ComponentInput_Changed" />
 
-                    <TextBlock Grid.Row="3" Text="高度差" VerticalAlignment="Center" />
-                    <TextBox x:Name="HeightBox" Grid.Row="3" Grid.Column="1" Height="26" TextChanged="ComponentInput_Changed" />
+                    <TextBlock Grid.Row="3" Text="坡度方式" VerticalAlignment="Center" />
+                    <ComboBox x:Name="SlopeModeComboBox" Grid.Row="3" Grid.Column="1" Height="28" SelectionChanged="ComponentInput_Changed" />
 
-                    <TextBlock Grid.Row="4" Text="坡度方式" VerticalAlignment="Center" />
-                    <ComboBox x:Name="SlopeModeComboBox" Grid.Row="4" Grid.Column="1" Height="28" SelectionChanged="ComponentInput_Changed" />
+                    <TextBlock Grid.Row="4" Text="固定坡度" VerticalAlignment="Center" />
+                    <TextBox x:Name="FixedSlopeBox" Grid.Row="4" Grid.Column="1" Height="26" TextChanged="ComponentInput_Changed" />
 
-                    <TextBlock Grid.Row="5" Text="固定坡度" VerticalAlignment="Center" />
-                    <TextBox x:Name="FixedSlopeBox" Grid.Row="5" Grid.Column="1" Height="26" TextChanged="ComponentInput_Changed" />
-
-                    <TextBlock Grid.Row="6" Text="颜色 RGB" VerticalAlignment="Center" />
-                    <Grid Grid.Row="6" Grid.Column="1">
+                    <TextBlock Grid.Row="5" Text="颜色 RGB" VerticalAlignment="Center" />
+                    <Grid Grid.Row="5" Grid.Column="1">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*" />
                             <ColumnDefinition Width="*" />
@@ -126,11 +127,51 @@
                         <Border x:Name="ColorPreviewBorder" Grid.Column="3" Height="24" Margin="6,1,0,1" BorderBrush="#888" BorderThickness="1" />
                     </Grid>
 
-                    <Button Grid.Row="7" Grid.ColumnSpan="2" Content="变宽数据表" Height="28" Click="WideningTable_Click" />
-                    <Button Grid.Row="8" Grid.ColumnSpan="2" Content="坡度变化数据表" Height="28" Click="SlopeTable_Click" />
+                    <CheckBox x:Name="InnerCurbCheckBox"
+                              Grid.Row="6"
+                              Grid.ColumnSpan="2"
+                              Content="内侧路缘石"
+                              VerticalAlignment="Center"
+                              Checked="CurbCheckBox_Changed"
+                              Unchecked="CurbCheckBox_Changed" />
+
+                    <TextBlock Grid.Row="7" Text="宽/高/埋" VerticalAlignment="Center" />
+                    <Grid Grid.Row="7" Grid.Column="1">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <TextBox x:Name="InnerCurbWidthBox" Height="26" TextChanged="ComponentInput_Changed" />
+                        <TextBox x:Name="InnerCurbHeightBox" Grid.Column="1" Height="26" Margin="4,0" TextChanged="ComponentInput_Changed" />
+                        <TextBox x:Name="InnerCurbEmbedDepthBox" Grid.Column="2" Height="26" TextChanged="ComponentInput_Changed" />
+                    </Grid>
+
+                    <CheckBox x:Name="OuterCurbCheckBox"
+                              Grid.Row="8"
+                              Grid.ColumnSpan="2"
+                              Content="外侧路缘石"
+                              VerticalAlignment="Center"
+                              Checked="CurbCheckBox_Changed"
+                              Unchecked="CurbCheckBox_Changed" />
+
+                    <TextBlock Grid.Row="9" Text="宽/高/埋" VerticalAlignment="Center" />
+                    <Grid Grid.Row="9" Grid.Column="1">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <TextBox x:Name="OuterCurbWidthBox" Height="26" TextChanged="ComponentInput_Changed" />
+                        <TextBox x:Name="OuterCurbHeightBox" Grid.Column="1" Height="26" Margin="4,0" TextChanged="ComponentInput_Changed" />
+                        <TextBox x:Name="OuterCurbEmbedDepthBox" Grid.Column="2" Height="26" TextChanged="ComponentInput_Changed" />
+                    </Grid>
+
+                    <Button Grid.Row="10" Grid.ColumnSpan="2" Content="变宽数据表" Height="28" Click="WideningTable_Click" />
+                    <Button Grid.Row="11" Grid.ColumnSpan="2" Content="坡度变化数据表" Height="28" Click="SlopeTable_Click" />
 
                     <CheckBox x:Name="PavementLayerCheckBox"
-                              Grid.Row="9"
+                              Grid.Row="12"
                               Grid.ColumnSpan="2"
                               Content="启用路面结构层模板"
                               VerticalAlignment="Center"
@@ -139,14 +180,14 @@
                               Checked="PavementLayerCheckBox_Changed"
                               Unchecked="PavementLayerCheckBox_Changed" />
 
-                    <TextBlock Grid.Row="10" Text="模板名称" VerticalAlignment="Center" />
-                    <TextBox x:Name="PavementLayerNameBox" Grid.Row="10" Grid.Column="1" Height="26" IsReadOnly="True" />
+                    <TextBlock Grid.Row="13" Text="模板名称" VerticalAlignment="Center" />
+                    <TextBox x:Name="PavementLayerNameBox" Grid.Row="13" Grid.Column="1" Height="26" IsReadOnly="True" />
 
-                    <TextBlock Grid.Row="11" Text="模板 handle" VerticalAlignment="Center" />
-                    <TextBox x:Name="PavementLayerHandleBox" Grid.Row="11" Grid.Column="1" Height="26" IsReadOnly="True" />
+                    <TextBlock Grid.Row="14" Text="模板 handle" VerticalAlignment="Center" />
+                    <TextBox x:Name="PavementLayerHandleBox" Grid.Row="14" Grid.Column="1" Height="26" IsReadOnly="True" />
 
-                    <Button x:Name="PickPavementLayerTemplateButton" Grid.Row="12" Grid.ColumnSpan="2" Content="选择结构层模板" Height="28" Click="PickPavementLayerTemplate_Click" />
-                    <Button x:Name="ClearPavementLayerTemplateButton" Grid.Row="13" Grid.ColumnSpan="2" Content="清除结构层模板" Height="28" Click="ClearPavementLayerTemplate_Click" />
+                    <Button x:Name="PickPavementLayerTemplateButton" Grid.Row="15" Grid.ColumnSpan="2" Content="选择结构层模板" Height="28" Click="PickPavementLayerTemplate_Click" />
+                    <Button x:Name="ClearPavementLayerTemplateButton" Grid.Row="16" Grid.ColumnSpan="2" Content="清除结构层模板" Height="28" Click="ClearPavementLayerTemplate_Click" />
                 </Grid>
             </StackPanel>
         </ScrollViewer>

@@ -7,6 +7,19 @@ namespace roadproto::domain::cross_section {
 namespace {
 
 constexpr double kStationTolerance = 1.0e-6;
+constexpr double kMedianOuterCurbDefaultSize = 0.15;
+
+void applyDefaultCurbs(SubgradeTemplateComponent& component)
+{
+    if (component.type != SubgradeComponentType::Median) {
+        return;
+    }
+
+    component.hasOuterCurb = true;
+    component.outerCurbWidth = kMedianOuterCurbDefaultSize;
+    component.outerCurbHeight = kMedianOuterCurbDefaultSize;
+    component.outerCurbEmbedDepth = kMedianOuterCurbDefaultSize;
+}
 
 SubgradeTemplateComponent makeComponent(
     SubgradeSide side,
@@ -17,7 +30,9 @@ SubgradeTemplateComponent makeComponent(
     component.side = side;
     component.type = type;
     component.width = width;
-    component.color = SubgradeTemplateDefaults::defaultColorFor(type);
+    component.fixedSlope = SubgradeTemplateDefaults::defaultSlopeFor(side, type);
+    component.color = SubgradeTemplateDefaults::defaultColorFor(side, type);
+    applyDefaultCurbs(component);
     return component;
 }
 
@@ -49,23 +64,91 @@ bool isFiniteValue(double value)
     return std::isfinite(value);
 }
 
+SubgradeTemplateRgbColor aciColorToRgb(int colorIndex)
+{
+    switch (colorIndex) {
+    case 7:
+        return {255, 255, 255};
+    case 12:
+        return {204, 0, 0};
+    case 22:
+        return {204, 51, 0};
+    case 32:
+        return {204, 102, 0};
+    case 42:
+        return {204, 153, 0};
+    case 43:
+        return {204, 178, 102};
+    case 52:
+        return {204, 204, 0};
+    case 61:
+        return {223, 255, 127};
+    case 62:
+        return {153, 204, 0};
+    case 72:
+        return {102, 204, 0};
+    case 82:
+        return {51, 204, 0};
+    case 92:
+        return {0, 204, 0};
+    case 102:
+        return {0, 204, 51};
+    default:
+        return {120, 120, 120};
+    }
+}
+
 } // namespace
 
 SubgradeTemplateRgbColor SubgradeTemplateDefaults::defaultColorFor(SubgradeComponentType type)
 {
+    return defaultColorFor(SubgradeSide::Right, type);
+}
+
+SubgradeTemplateRgbColor SubgradeTemplateDefaults::defaultColorFor(
+    SubgradeSide side,
+    SubgradeComponentType type)
+{
+    return aciColorToRgb(defaultColorIndexFor(side, type));
+}
+
+int SubgradeTemplateDefaults::defaultColorIndexFor(
+    SubgradeSide side,
+    SubgradeComponentType type)
+{
+    const auto isLeft = side == SubgradeSide::Left;
     switch (type) {
     case SubgradeComponentType::Median:
+        return isLeft ? 42 : 52;
     case SubgradeComponentType::SideMedian:
-        return {0, 120, 0};
+        return isLeft ? 92 : 102;
     case SubgradeComponentType::TravelLane:
+        return isLeft ? 32 : 62;
     case SubgradeComponentType::HardShoulder:
     case SubgradeComponentType::BikeLane:
-    case SubgradeComponentType::CurbStrip:
-        return {0, 90, 180};
+        return isLeft ? 22 : 72;
     case SubgradeComponentType::EarthShoulder:
     case SubgradeComponentType::Sidewalk:
+        return isLeft ? 12 : 82;
+    case SubgradeComponentType::CurbStrip:
+        return isLeft ? 43 : 61;
     default:
-        return {120, 120, 120};
+        return 7;
+    }
+}
+
+double SubgradeTemplateDefaults::defaultSlopeFor(SubgradeSide side, SubgradeComponentType type)
+{
+    const auto sign = side == SubgradeSide::Left ? 1.0 : -1.0;
+    switch (type) {
+    case SubgradeComponentType::TravelLane:
+    case SubgradeComponentType::HardShoulder:
+    case SubgradeComponentType::CurbStrip:
+        return sign * 0.02;
+    case SubgradeComponentType::EarthShoulder:
+        return sign * 0.03;
+    default:
+        return 0.0;
     }
 }
 
@@ -82,7 +165,6 @@ SubgradeTemplateData SubgradeTemplateDefaults::create(RoadGrade grade)
             data,
             {
                 {SubgradeComponentType::Median, 1.5},
-                {SubgradeComponentType::CurbStrip, 0.75},
                 {SubgradeComponentType::TravelLane, 7.5},
                 {SubgradeComponentType::HardShoulder, 3.0},
                 {SubgradeComponentType::EarthShoulder, 0.75},
@@ -93,7 +175,6 @@ SubgradeTemplateData SubgradeTemplateDefaults::create(RoadGrade grade)
             data,
             {
                 {SubgradeComponentType::Median, 1.0},
-                {SubgradeComponentType::CurbStrip, 0.5},
                 {SubgradeComponentType::TravelLane, 3.75},
                 {SubgradeComponentType::TravelLane, 3.75},
                 {SubgradeComponentType::HardShoulder, 2.5},
@@ -143,7 +224,6 @@ SubgradeTemplateData SubgradeTemplateDefaults::create(RoadGrade grade)
             data,
             {
                 {SubgradeComponentType::Median, 1.5},
-                {SubgradeComponentType::CurbStrip, 0.5},
                 {SubgradeComponentType::TravelLane, 3.5},
                 {SubgradeComponentType::TravelLane, 3.5},
                 {SubgradeComponentType::SideMedian, 1.5},
@@ -155,7 +235,6 @@ SubgradeTemplateData SubgradeTemplateDefaults::create(RoadGrade grade)
         appendSymmetricComponents(
             data,
             {
-                {SubgradeComponentType::CurbStrip, 0.25},
                 {SubgradeComponentType::TravelLane, 3.5},
                 {SubgradeComponentType::TravelLane, 3.5},
                 {SubgradeComponentType::BikeLane, 2.5},
@@ -167,7 +246,6 @@ SubgradeTemplateData SubgradeTemplateDefaults::create(RoadGrade grade)
             data,
             {
                 {SubgradeComponentType::TravelLane, 3.25},
-                {SubgradeComponentType::CurbStrip, 0.25},
                 {SubgradeComponentType::Sidewalk, 2.0},
             });
         break;
@@ -221,6 +299,33 @@ double SubgradeTemplateRules::slopeAtStation(const SubgradeTemplateComponent& co
     return 0.0;
 }
 
+double SubgradeTemplateRules::slopeElevationDeltaAtStation(
+    const SubgradeTemplateComponent& component,
+    double width,
+    double station)
+{
+    if (!isFiniteValue(width)) {
+        return 0.0;
+    }
+
+    const auto sideSign = component.side == SubgradeSide::Right ? 1.0 : -1.0;
+    return sideSign * std::fabs(width) * slopeAtStation(component, station);
+}
+
+double SubgradeTemplateRules::innerCurbHeightDelta(const SubgradeTemplateComponent& component)
+{
+    return component.hasInnerCurb && isFiniteNonNegative(component.innerCurbHeight)
+        ? component.innerCurbHeight
+        : 0.0;
+}
+
+double SubgradeTemplateRules::outerCurbHeightDelta(const SubgradeTemplateComponent& component)
+{
+    return component.hasOuterCurb && isFiniteNonNegative(component.outerCurbHeight)
+        ? -component.outerCurbHeight
+        : 0.0;
+}
+
 double SubgradeTemplateRules::effectivePavementThickness(const SubgradeTemplateComponent& component)
 {
     if (!component.pavementLayerLinked || !isFiniteNonNegative(component.pavementLayerThickness)) {
@@ -250,12 +355,37 @@ bool SubgradeTemplateRules::normalize(SubgradeTemplateData& data, std::wstring& 
             errorMessage = L"Subgrade template component height must be finite.";
             return false;
         }
+        component.height = 0.0;
         if (!isFiniteValue(component.fixedSlope)) {
             errorMessage = L"Subgrade template component slope must be finite.";
             return false;
         }
         if (component.slopeMode == SubgradeSlopeMode::VariableByStation) {
             component.fixedSlope = 0.0;
+        }
+        if (component.hasInnerCurb) {
+            if (!isFiniteNonNegative(component.innerCurbWidth) ||
+                !isFiniteNonNegative(component.innerCurbHeight) ||
+                !isFiniteNonNegative(component.innerCurbEmbedDepth)) {
+                errorMessage = L"Subgrade template inner curb dimensions must be finite and non-negative.";
+                return false;
+            }
+        } else {
+            component.innerCurbWidth = 0.0;
+            component.innerCurbHeight = 0.0;
+            component.innerCurbEmbedDepth = 0.0;
+        }
+        if (component.hasOuterCurb) {
+            if (!isFiniteNonNegative(component.outerCurbWidth) ||
+                !isFiniteNonNegative(component.outerCurbHeight) ||
+                !isFiniteNonNegative(component.outerCurbEmbedDepth)) {
+                errorMessage = L"Subgrade template outer curb dimensions must be finite and non-negative.";
+                return false;
+            }
+        } else {
+            component.outerCurbWidth = 0.0;
+            component.outerCurbHeight = 0.0;
+            component.outerCurbEmbedDepth = 0.0;
         }
         if (component.pavementLayerHandle.empty()) {
             component.pavementLayerLinked = false;

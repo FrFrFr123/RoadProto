@@ -67,6 +67,14 @@ public sealed class SubgradeComponentDto
     public int ColorB { get; set; } = 120;
     public List<SubgradeStationValueDto> WideningTable { get; set; } = new();
     public List<SubgradeStationValueDto> VariableSlopeTable { get; set; } = new();
+    public bool HasInnerCurb { get; set; }
+    public double InnerCurbWidth { get; set; }
+    public double InnerCurbHeight { get; set; }
+    public double InnerCurbEmbedDepth { get; set; }
+    public bool HasOuterCurb { get; set; }
+    public double OuterCurbWidth { get; set; }
+    public double OuterCurbHeight { get; set; }
+    public double OuterCurbEmbedDepth { get; set; }
     public bool PavementLayerLinked { get; set; }
     public string PavementLayerHandle { get; set; } = string.Empty;
     public string PavementLayerName { get; set; } = string.Empty;
@@ -90,6 +98,14 @@ public sealed class SubgradeComponentDto
             ColorB = ColorB,
             WideningTable = WideningTable.ConvertAll(row => row.Clone()),
             VariableSlopeTable = VariableSlopeTable.ConvertAll(row => row.Clone()),
+            HasInnerCurb = HasInnerCurb,
+            InnerCurbWidth = InnerCurbWidth,
+            InnerCurbHeight = InnerCurbHeight,
+            InnerCurbEmbedDepth = InnerCurbEmbedDepth,
+            HasOuterCurb = HasOuterCurb,
+            OuterCurbWidth = OuterCurbWidth,
+            OuterCurbHeight = OuterCurbHeight,
+            OuterCurbEmbedDepth = OuterCurbEmbedDepth,
             PavementLayerLinked = PavementLayerLinked,
             PavementLayerHandle = PavementLayerHandle,
             PavementLayerName = PavementLayerName,

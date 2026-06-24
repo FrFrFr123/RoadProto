@@ -149,6 +149,14 @@ static void SubgradeRequestReadsPersistedEntityComponents()
             "component.0.slopeTableCount=1",
             "component.0.slopeTable.0.station=100",
             "component.0.slopeTable.0.value=-0.025",
+            "component.0.hasInnerCurb=1",
+            "component.0.innerCurbWidth=0.2",
+            "component.0.innerCurbHeight=0.18",
+            "component.0.innerCurbEmbedDepth=0.12",
+            "component.0.hasOuterCurb=1",
+            "component.0.outerCurbWidth=0.25",
+            "component.0.outerCurbHeight=0.2",
+            "component.0.outerCurbEmbedDepth=0.1",
             "component.0.pavementLayerLinked=1",
             "component.0.pavementLayerHandle=44",
             "component.0.pavementLayerName=主线%25%0A结构层",
@@ -180,6 +188,14 @@ static void SubgradeRequestReadsPersistedEntityComponents()
         Check(request.Components[0].SlopeMode == SubgradeSlopeMode.VariableByStation, "slope mode should round-trip");
         Check(request.Components[0].VariableSlopeTable.Count == 1, "variable slope table should round-trip");
         Check(Math.Abs(request.Components[0].VariableSlopeTable[0].Value + 0.025) < 1.0e-9, "slope value should round-trip");
+        Check(request.Components[0].HasInnerCurb, "inner curb flag should round-trip");
+        Check(Math.Abs(request.Components[0].InnerCurbWidth - 0.2) < 1.0e-9, "inner curb width should round-trip");
+        Check(Math.Abs(request.Components[0].InnerCurbHeight - 0.18) < 1.0e-9, "inner curb height should round-trip");
+        Check(Math.Abs(request.Components[0].InnerCurbEmbedDepth - 0.12) < 1.0e-9, "inner curb embed depth should round-trip");
+        Check(request.Components[0].HasOuterCurb, "outer curb flag should round-trip");
+        Check(Math.Abs(request.Components[0].OuterCurbWidth - 0.25) < 1.0e-9, "outer curb width should round-trip");
+        Check(Math.Abs(request.Components[0].OuterCurbHeight - 0.2) < 1.0e-9, "outer curb height should round-trip");
+        Check(Math.Abs(request.Components[0].OuterCurbEmbedDepth - 0.1) < 1.0e-9, "outer curb embed depth should round-trip");
         Check(request.Components[0].PavementLayerLinked, "pavement link should round-trip");
         Check((string)RequiredProperty(typeof(SubgradeComponentDto), "PavementLayerName").GetValue(request.Components[0])! == "主线%\n结构层", "pavement layer name should round-trip");
         Check(request.Components[1].Side == SubgradeSide.Right, "second component side should round-trip");
@@ -222,6 +238,14 @@ static void SubgradeResponseWritesPavementTemplatePickActionAndPreservesRows()
             Side = SubgradeSide.Left,
             Type = SubgradeComponentType.TravelLane,
             Width = 3.75,
+            HasInnerCurb = true,
+            InnerCurbWidth = 0.2,
+            InnerCurbHeight = 0.18,
+            InnerCurbEmbedDepth = 0.12,
+            HasOuterCurb = true,
+            OuterCurbWidth = 0.25,
+            OuterCurbHeight = 0.2,
+            OuterCurbEmbedDepth = 0.1,
             PavementLayerLinked = true,
             PavementLayerHandle = "PV%1",
             PavementLayerThickness = 0.28,
@@ -241,6 +265,14 @@ static void SubgradeResponseWritesPavementTemplatePickActionAndPreservesRows()
         Check(content.Contains("accepted=0"), "picking should close the WPF dialog without accepting final changes");
         Check(content.Contains("pickComponentIndex=1"), "subgrade response should keep selected component index");
         Check(content.Contains("componentCount=2"), "subgrade pick response should preserve current component rows");
+        Check(content.Contains("component.0.hasInnerCurb=1"), "subgrade response should write inner curb flag");
+        Check(content.Contains("component.0.innerCurbWidth=0.2"), "subgrade response should write inner curb width");
+        Check(content.Contains("component.0.innerCurbHeight=0.18"), "subgrade response should write inner curb height");
+        Check(content.Contains("component.0.innerCurbEmbedDepth=0.12"), "subgrade response should write inner curb embed depth");
+        Check(content.Contains("component.0.hasOuterCurb=1"), "subgrade response should write outer curb flag");
+        Check(content.Contains("component.0.outerCurbWidth=0.25"), "subgrade response should write outer curb width");
+        Check(content.Contains("component.0.outerCurbHeight=0.2"), "subgrade response should write outer curb height");
+        Check(content.Contains("component.0.outerCurbEmbedDepth=0.1"), "subgrade response should write outer curb embed depth");
         Check(content.Contains("component.0.pavementLayerHandle=PV%251"), "subgrade response should escape pavement template handle");
         Check(content.Contains("component.0.pavementLayerName=主线%0A结构层"), "subgrade response should write pavement template name");
     }

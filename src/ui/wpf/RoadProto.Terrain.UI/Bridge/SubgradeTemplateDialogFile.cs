@@ -76,6 +76,14 @@ public static class SubgradeTemplateDialogFile
             ColorB = GetInt(values, $"{prefix}.colorB", 120),
             WideningTable = ReadRows(values, $"{prefix}.widening"),
             VariableSlopeTable = ReadRows(values, $"{prefix}.slopeTable"),
+            HasInnerCurb = GetBool(values, $"{prefix}.hasInnerCurb"),
+            InnerCurbWidth = GetDouble(values, $"{prefix}.innerCurbWidth"),
+            InnerCurbHeight = GetDouble(values, $"{prefix}.innerCurbHeight"),
+            InnerCurbEmbedDepth = GetDouble(values, $"{prefix}.innerCurbEmbedDepth"),
+            HasOuterCurb = GetBool(values, $"{prefix}.hasOuterCurb"),
+            OuterCurbWidth = GetDouble(values, $"{prefix}.outerCurbWidth"),
+            OuterCurbHeight = GetDouble(values, $"{prefix}.outerCurbHeight"),
+            OuterCurbEmbedDepth = GetDouble(values, $"{prefix}.outerCurbEmbedDepth"),
             PavementLayerLinked = GetBool(values, $"{prefix}.pavementLayerLinked"),
             PavementLayerHandle = Get(values, $"{prefix}.pavementLayerHandle"),
             PavementLayerName = Get(values, $"{prefix}.pavementLayerName"),
@@ -87,7 +95,7 @@ public static class SubgradeTemplateDialogFile
         lines.Add(Write($"{prefix}.side", component.Side.ToString()));
         lines.Add(Write($"{prefix}.type", component.Type.ToString()));
         lines.Add(Write($"{prefix}.width", component.Width));
-        lines.Add(Write($"{prefix}.height", component.Height));
+        lines.Add(Write($"{prefix}.height", 0.0));
         lines.Add(Write($"{prefix}.fixedSlope", component.FixedSlope));
         lines.Add(Write($"{prefix}.slopeMode", component.SlopeMode.ToString()));
         lines.Add(Write($"{prefix}.colorR", component.ColorR));
@@ -95,6 +103,14 @@ public static class SubgradeTemplateDialogFile
         lines.Add(Write($"{prefix}.colorB", component.ColorB));
         WriteRows(lines, $"{prefix}.widening", component.WideningTable);
         WriteRows(lines, $"{prefix}.slopeTable", component.VariableSlopeTable);
+        lines.Add(Write($"{prefix}.hasInnerCurb", component.HasInnerCurb));
+        lines.Add(Write($"{prefix}.innerCurbWidth", component.InnerCurbWidth));
+        lines.Add(Write($"{prefix}.innerCurbHeight", component.InnerCurbHeight));
+        lines.Add(Write($"{prefix}.innerCurbEmbedDepth", component.InnerCurbEmbedDepth));
+        lines.Add(Write($"{prefix}.hasOuterCurb", component.HasOuterCurb));
+        lines.Add(Write($"{prefix}.outerCurbWidth", component.OuterCurbWidth));
+        lines.Add(Write($"{prefix}.outerCurbHeight", component.OuterCurbHeight));
+        lines.Add(Write($"{prefix}.outerCurbEmbedDepth", component.OuterCurbEmbedDepth));
         lines.Add(Write($"{prefix}.pavementLayerLinked", component.PavementLayerLinked));
         lines.Add(Write($"{prefix}.pavementLayerHandle", component.PavementLayerHandle));
         lines.Add(Write($"{prefix}.pavementLayerName", component.PavementLayerName));

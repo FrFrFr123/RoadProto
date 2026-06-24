@@ -32,7 +32,7 @@ ACRX_DXF_DEFINE_MEMBERS(
 
 namespace {
 
-constexpr Adesk::Int16 kEntityVersion = 2;
+constexpr Adesk::Int16 kEntityVersion = 3;
 constexpr Adesk::Int32 kMaxComponents = 1000;
 constexpr Adesk::Int32 kMaxTableRows = 10000;
 constexpr double kMinAxisLength = 1.0e-9;
@@ -159,6 +159,45 @@ void drawLine(
     worldDraw->geometry().polyline(2, points);
 }
 
+void drawCurb(
+    AcGiWorldDraw* worldDraw,
+    const AcGePoint3d& origin,
+    const AcGeVector3d& xAxis,
+    const AcGeVector3d& yAxis,
+    const SubgradeTemplateRgbColor& color,
+    double edgeX,
+    double insideX,
+    double edgeSurfaceY,
+    double insideSurfaceY,
+    double height,
+    double embedDepth)
+{
+    if (std::fabs(edgeX - insideX) <= 1.0e-9 || (height <= 0.0 && embedDepth <= 0.0)) {
+        return;
+    }
+
+    const auto curbTopStartY = edgeSurfaceY;
+    const auto curbTopInsideY = insideSurfaceY;
+    const auto edgeBottom = edgeSurfaceY - height - embedDepth;
+    const auto insideBottom = insideSurfaceY - height - embedDepth;
+
+    worldDraw->subEntityTraits().setTrueColor(entityColor(color));
+    worldDraw->subEntityTraits().setFillType(kAcGiFillAlways);
+    AcGePoint3d polygon[4] = {
+        sectionPoint(origin, xAxis, yAxis, edgeX, curbTopStartY),
+        sectionPoint(origin, xAxis, yAxis, insideX, curbTopInsideY),
+        sectionPoint(origin, xAxis, yAxis, insideX, insideBottom),
+        sectionPoint(origin, xAxis, yAxis, edgeX, edgeBottom)};
+    worldDraw->geometry().polygon(4, polygon);
+
+    worldDraw->subEntityTraits().setTrueColor(entityColor(SubgradeTemplateRgbColor{255, 255, 255}));
+    worldDraw->subEntityTraits().setFillType(kAcGiFillNever);
+    drawLine(worldDraw, origin, xAxis, yAxis, edgeX, edgeBottom, edgeX, curbTopStartY);
+    drawLine(worldDraw, origin, xAxis, yAxis, edgeX, curbTopStartY, insideX, curbTopInsideY);
+    drawLine(worldDraw, origin, xAxis, yAxis, insideX, curbTopInsideY, insideX, insideBottom);
+    drawLine(worldDraw, origin, xAxis, yAxis, insideX, insideBottom, edgeX, edgeBottom);
+}
+
 void drawText(
     AcGiWorldDraw* worldDraw,
     const AcGePoint3d& origin,
@@ -177,6 +216,30 @@ void drawText(
         sectionPoint(origin, xAxis, yAxis, x, y),
         textNormal(xAxis, yAxis),
         textDirection(xAxis),
+        height,
+        1.0,
+        0.0,
+        text.c_str());
+}
+
+void drawVerticalText(
+    AcGiWorldDraw* worldDraw,
+    const AcGePoint3d& origin,
+    const AcGeVector3d& xAxis,
+    const AcGeVector3d& yAxis,
+    double x,
+    double y,
+    const std::wstring& text,
+    double height)
+{
+    if (text.empty()) {
+        return;
+    }
+
+    worldDraw->geometry().text(
+        sectionPoint(origin, xAxis, yAxis, x, y),
+        textNormal(xAxis, yAxis),
+        textDirection(yAxis),
         height,
         1.0,
         0.0,
@@ -236,8 +299,8 @@ void walkSideForBounds(
             continue;
         }
         const auto width = std::max(0.0, component.width) * scale;
-        const auto yStart = y + component.height * scale;
-        const auto yEnd = yStart + displaySlope(component) * width;
+        const auto yStart = y + SubgradeTemplateRules::innerCurbHeightDelta(component) * scale;
+        const auto yEnd = yStart + displaySlope(component) * width * sign;
         const auto xEnd = x + sign * width;
         const auto thickness = std::max(0.15 * scale, 0.5);
         const auto bottom = std::min(yStart, yEnd) - thickness;
@@ -245,8 +308,30 @@ void walkSideForBounds(
         addBounds(bounds, xEnd, yEnd);
         addBounds(bounds, x, bottom);
         addBounds(bounds, xEnd, bottom);
+        if (component.hasInnerCurb) {
+            const auto curbWidth = std::min(std::max(0.0, component.innerCurbWidth) * scale, width);
+            const auto curbHeight = std::max(0.0, component.innerCurbHeight) * scale;
+            const auto curbEmbedDepth = std::max(0.0, component.innerCurbEmbedDepth) * scale;
+            const auto xInside = x + sign * curbWidth;
+            const auto yInside = width > 1.0e-9 ? yStart + (yEnd - yStart) * (curbWidth / width) : yStart;
+            addBounds(bounds, x, yStart);
+            addBounds(bounds, xInside, yInside);
+            addBounds(bounds, x, yStart - curbHeight - curbEmbedDepth);
+            addBounds(bounds, xInside, yInside - curbHeight - curbEmbedDepth);
+        }
+        if (component.hasOuterCurb) {
+            const auto curbWidth = std::min(std::max(0.0, component.outerCurbWidth) * scale, width);
+            const auto curbHeight = std::max(0.0, component.outerCurbHeight) * scale;
+            const auto curbEmbedDepth = std::max(0.0, component.outerCurbEmbedDepth) * scale;
+            const auto xInside = xEnd - sign * curbWidth;
+            const auto yInside = width > 1.0e-9 ? yEnd - (yEnd - yStart) * (curbWidth / width) : yEnd;
+            addBounds(bounds, xEnd, yEnd);
+            addBounds(bounds, xInside, yInside);
+            addBounds(bounds, xEnd, yEnd - curbHeight - curbEmbedDepth);
+            addBounds(bounds, xInside, yInside - curbHeight - curbEmbedDepth);
+        }
         x = xEnd;
-        y = yEnd;
+        y = yEnd + SubgradeTemplateRules::outerCurbHeightDelta(component) * scale;
     }
 }
 
@@ -277,8 +362,8 @@ void drawComponent(
 {
     const auto sign = component.side == SubgradeSide::Left ? -1.0 : 1.0;
     const auto width = std::max(0.0, component.width) * scale;
-    const auto yStart = y + component.height * scale;
-    const auto yEnd = yStart + displaySlope(component) * width;
+    const auto yStart = y + SubgradeTemplateRules::innerCurbHeightDelta(component) * scale;
+    const auto yEnd = yStart + displaySlope(component) * width * sign;
     const auto xEnd = x + sign * width;
     const auto thickness = std::max(0.15 * scale, 0.5);
     const auto bottomStart = yStart - thickness;
@@ -300,15 +385,54 @@ void drawComponent(
     drawLine(worldDraw, origin, xAxis, yAxis, xEnd, bottomEnd, x, bottomStart);
     drawLine(worldDraw, origin, xAxis, yAxis, x, bottomStart, x, yStart);
 
+    if (component.hasInnerCurb) {
+        const auto curbWidth = std::min(std::max(0.0, component.innerCurbWidth) * scale, width);
+        const auto curbHeight = std::max(0.0, component.innerCurbHeight) * scale;
+        const auto curbEmbedDepth = std::max(0.0, component.innerCurbEmbedDepth) * scale;
+        const auto xInside = x + sign * curbWidth;
+        const auto yInside = width > 1.0e-9 ? yStart + (yEnd - yStart) * (curbWidth / width) : yStart;
+        drawCurb(
+            worldDraw,
+            origin,
+            xAxis,
+            yAxis,
+            component.color,
+            x,
+            xInside,
+            yStart,
+            yInside,
+            curbHeight,
+            curbEmbedDepth);
+    }
+    if (component.hasOuterCurb) {
+        const auto curbWidth = std::min(std::max(0.0, component.outerCurbWidth) * scale, width);
+        const auto curbHeight = std::max(0.0, component.outerCurbHeight) * scale;
+        const auto curbEmbedDepth = std::max(0.0, component.outerCurbEmbedDepth) * scale;
+        const auto xInside = xEnd - sign * curbWidth;
+        const auto yInside = width > 1.0e-9 ? yEnd - (yEnd - yStart) * (curbWidth / width) : yEnd;
+        drawCurb(
+            worldDraw,
+            origin,
+            xAxis,
+            yAxis,
+            component.color,
+            xEnd,
+            xInside,
+            yEnd,
+            yInside,
+            curbHeight,
+            curbEmbedDepth);
+    }
+
     if (width > scale * 0.5) {
         worldDraw->subEntityTraits().setColor(7);
-        const auto labelX = (x + xEnd) * 0.5 - scale * 0.2;
+        const auto labelX = (x + xEnd) * 0.5;
         const auto labelY = std::max(yStart, yEnd) + 0.25 * scale;
-        drawText(worldDraw, origin, xAxis, yAxis, labelX, labelY, componentLabel(component), std::max(1.8, 0.22 * scale));
+        drawVerticalText(worldDraw, origin, xAxis, yAxis, labelX, labelY, componentLabel(component), std::max(1.8, 0.22 * scale));
     }
 
     x = xEnd;
-    y = yEnd;
+    y = yEnd + SubgradeTemplateRules::outerCurbHeightDelta(component) * scale;
 }
 
 void drawSide(
@@ -459,6 +583,16 @@ Acad::ErrorStatus DnSubgradeTemplateEntity::dwgInFields(AcDbDwgFiler* filer)
         filer->readInt32(&component.color.b);
         readStationRows(filer, component.wideningTable);
         readStationRows(filer, component.variableSlopeTable);
+        if (version >= 3) {
+            component.hasInnerCurb = readBool(filer);
+            filer->readDouble(&component.innerCurbWidth);
+            filer->readDouble(&component.innerCurbHeight);
+            filer->readDouble(&component.innerCurbEmbedDepth);
+            component.hasOuterCurb = readBool(filer);
+            filer->readDouble(&component.outerCurbWidth);
+            filer->readDouble(&component.outerCurbHeight);
+            filer->readDouble(&component.outerCurbEmbedDepth);
+        }
         component.pavementLayerLinked = readBool(filer);
         component.pavementLayerHandle = readWideString(filer);
         component.pavementLayerName = version >= 2 ? readWideString(filer) : L"";
@@ -523,6 +657,14 @@ Acad::ErrorStatus DnSubgradeTemplateEntity::dwgOutFields(AcDbDwgFiler* filer) co
         filer->writeInt32(component.color.b);
         writeStationRows(filer, component.wideningTable);
         writeStationRows(filer, component.variableSlopeTable);
+        writeBool(filer, component.hasInnerCurb);
+        filer->writeDouble(component.innerCurbWidth);
+        filer->writeDouble(component.innerCurbHeight);
+        filer->writeDouble(component.innerCurbEmbedDepth);
+        writeBool(filer, component.hasOuterCurb);
+        filer->writeDouble(component.outerCurbWidth);
+        filer->writeDouble(component.outerCurbHeight);
+        filer->writeDouble(component.outerCurbEmbedDepth);
         writeBool(filer, component.pavementLayerLinked);
         writeWideString(filer, component.pavementLayerHandle);
         writeWideString(filer, component.pavementLayerName);

@@ -15,6 +15,7 @@ namespace RoadProto.Terrain.UI;
 public partial class SubgradeTemplateWindow : Window
 {
     private const SubgradeRoadGrade CreateModeDefaultRoadGrade = SubgradeRoadGrade.Expressway;
+    private static readonly Brush CurbStrokeBrush = Brushes.White;
     private readonly SubgradeTemplateDialogRequest _request;
     private readonly ObservableCollection<SubgradeComponentDto> _components = new();
     private bool _loading = true;
@@ -166,6 +167,7 @@ public partial class SubgradeTemplateWindow : Window
 
         ApplyInputsToSelectedComponent();
         UpdateSlopeModeInputState();
+        UpdateCurbInputState();
         ComponentListBox.Items.Refresh();
         DrawPreview();
     }
@@ -179,6 +181,18 @@ public partial class SubgradeTemplateWindow : Window
 
         ApplyInputsToSelectedComponent();
         UpdatePavementLayerInputState();
+        DrawPreview();
+    }
+
+    private void CurbCheckBox_Changed(object sender, RoutedEventArgs e)
+    {
+        if (_loading)
+        {
+            return;
+        }
+
+        ApplyInputsToSelectedComponent();
+        UpdateCurbInputState();
         DrawPreview();
     }
 
@@ -250,10 +264,12 @@ public partial class SubgradeTemplateWindow : Window
             Side = side,
             Type = type,
             Width = 1.0,
-            ColorR = DefaultColor(type).R,
-            ColorG = DefaultColor(type).G,
-            ColorB = DefaultColor(type).B,
+            FixedSlope = DefaultSlope(side, type),
+            ColorR = DefaultColor(side, type).R,
+            ColorG = DefaultColor(side, type).G,
+            ColorB = DefaultColor(side, type).B,
         };
+        ApplyDefaultCurbParameters(component);
         _components.Add(component);
         ComponentListBox.SelectedIndex = _components.Count - 1;
         ComponentListBox.ScrollIntoView(component);
@@ -369,8 +385,15 @@ public partial class SubgradeTemplateWindow : Window
             DisplayScale = SelectedValue(DisplayScaleComboBox, 10.0),
             RoadGrade = SelectedValue(RoadGradeComboBox, SubgradeRoadGrade.Expressway),
             RoadCenterlineHandle = _request.RoadCenterlineHandle,
-            Components = _components.Select(component => component.Clone()).ToList(),
+            Components = _components.Select(CloneForResponse).ToList(),
         };
+
+    private static SubgradeComponentDto CloneForResponse(SubgradeComponentDto component)
+    {
+        var clone = component.Clone();
+        clone.Height = 0.0;
+        return clone;
+    }
 
     private void RefreshSelectedComponentInputs()
     {
@@ -379,12 +402,13 @@ public partial class SubgradeTemplateWindow : Window
         var hasComponent = component != null;
         ComponentTypeComboBox.IsEnabled = hasComponent;
         WidthBox.IsEnabled = hasComponent;
-        HeightBox.IsEnabled = hasComponent;
         SlopeModeComboBox.IsEnabled = hasComponent;
         FixedSlopeBox.IsEnabled = hasComponent;
         ColorRBox.IsEnabled = hasComponent;
         ColorGBox.IsEnabled = hasComponent;
         ColorBBox.IsEnabled = hasComponent;
+        InnerCurbCheckBox.IsEnabled = hasComponent;
+        OuterCurbCheckBox.IsEnabled = hasComponent;
         PavementLayerCheckBox.IsEnabled = hasComponent;
         PickPavementLayerTemplateButtonState(hasComponent);
 
@@ -393,17 +417,25 @@ public partial class SubgradeTemplateWindow : Window
             SelectedSideText.Text = "";
             ComponentTypeComboBox.SelectedIndex = -1;
             WidthBox.Text = "";
-            HeightBox.Text = "";
             FixedSlopeBox.Text = "";
             ColorRBox.Text = "";
             ColorGBox.Text = "";
             ColorBBox.Text = "";
+            InnerCurbCheckBox.IsChecked = false;
+            InnerCurbWidthBox.Text = "";
+            InnerCurbHeightBox.Text = "";
+            InnerCurbEmbedDepthBox.Text = "";
+            OuterCurbCheckBox.IsChecked = false;
+            OuterCurbWidthBox.Text = "";
+            OuterCurbHeightBox.Text = "";
+            OuterCurbEmbedDepthBox.Text = "";
             PavementLayerCheckBox.IsChecked = false;
             PavementLayerNameBox.Text = "";
             PavementLayerHandleBox.Text = "";
             ColorPreviewBorder.Background = Brushes.Transparent;
             _loading = false;
             UpdateSlopeModeInputState();
+            UpdateCurbInputState();
             UpdatePavementLayerInputState();
             return;
         }
@@ -412,17 +444,25 @@ public partial class SubgradeTemplateWindow : Window
         SelectComboValue(ComponentTypeComboBox, component.Type);
         SelectComboValue(SlopeModeComboBox, component.SlopeMode);
         WidthBox.Text = Format(component.Width);
-        HeightBox.Text = Format(component.Height);
         FixedSlopeBox.Text = Format(component.FixedSlope);
         ColorRBox.Text = component.ColorR.ToString(CultureInfo.InvariantCulture);
         ColorGBox.Text = component.ColorG.ToString(CultureInfo.InvariantCulture);
         ColorBBox.Text = component.ColorB.ToString(CultureInfo.InvariantCulture);
+        InnerCurbCheckBox.IsChecked = component.HasInnerCurb;
+        InnerCurbWidthBox.Text = Format(component.InnerCurbWidth);
+        InnerCurbHeightBox.Text = Format(component.InnerCurbHeight);
+        InnerCurbEmbedDepthBox.Text = Format(component.InnerCurbEmbedDepth);
+        OuterCurbCheckBox.IsChecked = component.HasOuterCurb;
+        OuterCurbWidthBox.Text = Format(component.OuterCurbWidth);
+        OuterCurbHeightBox.Text = Format(component.OuterCurbHeight);
+        OuterCurbEmbedDepthBox.Text = Format(component.OuterCurbEmbedDepth);
         PavementLayerCheckBox.IsChecked = !string.IsNullOrWhiteSpace(component.PavementLayerHandle);
         PavementLayerNameBox.Text = component.PavementLayerName;
         PavementLayerHandleBox.Text = component.PavementLayerHandle;
         ColorPreviewBorder.Background = BrushFor(component);
         _loading = false;
         UpdateSlopeModeInputState();
+        UpdateCurbInputState();
         UpdatePavementLayerInputState();
     }
 
@@ -436,7 +476,7 @@ public partial class SubgradeTemplateWindow : Window
 
         component.Type = SelectedValue(ComponentTypeComboBox, component.Type);
         component.Width = Math.Max(0.0, ReadDouble(WidthBox.Text, component.Width));
-        component.Height = ReadDouble(HeightBox.Text, component.Height);
+        component.Height = 0.0;
         component.SlopeMode = SelectedValue(SlopeModeComboBox, component.SlopeMode);
         component.FixedSlope = component.SlopeMode == SubgradeSlopeMode.Fixed
             ? ReadDouble(FixedSlopeBox.Text, component.FixedSlope)
@@ -444,6 +484,14 @@ public partial class SubgradeTemplateWindow : Window
         component.ColorR = ClampColor(ReadInt(ColorRBox.Text, component.ColorR));
         component.ColorG = ClampColor(ReadInt(ColorGBox.Text, component.ColorG));
         component.ColorB = ClampColor(ReadInt(ColorBBox.Text, component.ColorB));
+        component.HasInnerCurb = InnerCurbCheckBox.IsChecked == true;
+        component.InnerCurbWidth = component.HasInnerCurb ? Math.Max(0.0, ReadDouble(InnerCurbWidthBox.Text, component.InnerCurbWidth)) : 0.0;
+        component.InnerCurbHeight = component.HasInnerCurb ? Math.Max(0.0, ReadDouble(InnerCurbHeightBox.Text, component.InnerCurbHeight)) : 0.0;
+        component.InnerCurbEmbedDepth = component.HasInnerCurb ? Math.Max(0.0, ReadDouble(InnerCurbEmbedDepthBox.Text, component.InnerCurbEmbedDepth)) : 0.0;
+        component.HasOuterCurb = OuterCurbCheckBox.IsChecked == true;
+        component.OuterCurbWidth = component.HasOuterCurb ? Math.Max(0.0, ReadDouble(OuterCurbWidthBox.Text, component.OuterCurbWidth)) : 0.0;
+        component.OuterCurbHeight = component.HasOuterCurb ? Math.Max(0.0, ReadDouble(OuterCurbHeightBox.Text, component.OuterCurbHeight)) : 0.0;
+        component.OuterCurbEmbedDepth = component.HasOuterCurb ? Math.Max(0.0, ReadDouble(OuterCurbEmbedDepthBox.Text, component.OuterCurbEmbedDepth)) : 0.0;
         component.PavementLayerHandle = PavementLayerHandleBox.Text.Trim();
         component.PavementLayerLinked = !string.IsNullOrWhiteSpace(component.PavementLayerHandle);
         component.PavementLayerName = component.PavementLayerLinked ? PavementLayerNameBox.Text.Trim() : string.Empty;
@@ -457,6 +505,27 @@ public partial class SubgradeTemplateWindow : Window
             && SelectedValue(SlopeModeComboBox, component.SlopeMode) == SubgradeSlopeMode.Fixed;
         FixedSlopeBox.IsEnabled = fixedSlopeEnabled;
         FixedSlopeBox.Opacity = fixedSlopeEnabled ? 1.0 : 0.55;
+    }
+
+    private void UpdateCurbInputState()
+    {
+        var hasComponent = SelectedComponent != null;
+        var innerEnabled = hasComponent && InnerCurbCheckBox.IsChecked == true;
+        var outerEnabled = hasComponent && OuterCurbCheckBox.IsChecked == true;
+
+        InnerCurbWidthBox.IsEnabled = innerEnabled;
+        InnerCurbHeightBox.IsEnabled = innerEnabled;
+        InnerCurbEmbedDepthBox.IsEnabled = innerEnabled;
+        InnerCurbWidthBox.Opacity = innerEnabled ? 1.0 : 0.55;
+        InnerCurbHeightBox.Opacity = innerEnabled ? 1.0 : 0.55;
+        InnerCurbEmbedDepthBox.Opacity = innerEnabled ? 1.0 : 0.55;
+
+        OuterCurbWidthBox.IsEnabled = outerEnabled;
+        OuterCurbHeightBox.IsEnabled = outerEnabled;
+        OuterCurbEmbedDepthBox.IsEnabled = outerEnabled;
+        OuterCurbWidthBox.Opacity = outerEnabled ? 1.0 : 0.55;
+        OuterCurbHeightBox.Opacity = outerEnabled ? 1.0 : 0.55;
+        OuterCurbEmbedDepthBox.Opacity = outerEnabled ? 1.0 : 0.55;
     }
 
     private void UpdatePavementLayerInputState()
@@ -531,8 +600,8 @@ public partial class SubgradeTemplateWindow : Window
                 }
 
                 var w = Math.Max(0.05, component.Width);
-                var topStartY = y + component.Height;
-                var topEndY = topStartY + DisplaySlope(component) * w;
+                var topStartY = y + InnerCurbHeightDelta(component);
+                var topEndY = topStartY + DisplaySlope(component) * w * sign;
                 var x2 = x + sign * w;
                 var bottomOffset = 0.35;
                 var points = new PointCollection
@@ -553,6 +622,8 @@ public partial class SubgradeTemplateWindow : Window
                 };
                 polygon.MouseLeftButtonDown += PreviewComponent_MouseLeftButtonDown;
                 PreviewCanvas.Children.Add(polygon);
+                AddPreviewCurb(component, true, x, x2, topStartY, topEndY, sign, scale, ox, oy);
+                AddPreviewCurb(component, false, x, x2, topStartY, topEndY, sign, scale, ox, oy);
 
                 var labelX = Math.Min(ox + x * scale, ox + x2 * scale);
                 var labelWidth = Math.Max(24.0, Math.Abs((x2 - x) * scale));
@@ -570,9 +641,62 @@ public partial class SubgradeTemplateWindow : Window
                 AddCanvasText(SlopeText(component), labelX, widthY + 12.0, Brushes.Black, 10, labelWidth, TextAlignment.Center);
                 PreviewCanvas.Children.Add(CreatePreviewComponentHitTarget(points, index));
                 x = x2;
-                y = topEndY;
+                y = topEndY + OuterCurbHeightDelta(component);
             }
         }
+    }
+
+    private void AddPreviewCurb(
+        SubgradeComponentDto component,
+        bool inner,
+        double x,
+        double x2,
+        double topStartY,
+        double topEndY,
+        double sign,
+        double scale,
+        double ox,
+        double oy)
+    {
+        var enabled = inner ? component.HasInnerCurb : component.HasOuterCurb;
+        if (!enabled)
+        {
+            return;
+        }
+
+        var componentWidth = Math.Abs(x2 - x);
+        var curbWidth = Math.Min(
+            componentWidth,
+            Math.Max(0.0, inner ? component.InnerCurbWidth : component.OuterCurbWidth));
+        var curbHeight = Math.Max(0.0, inner ? component.InnerCurbHeight : component.OuterCurbHeight);
+        var curbEmbedDepth = Math.Max(0.0, inner ? component.InnerCurbEmbedDepth : component.OuterCurbEmbedDepth);
+        if (curbWidth <= 1.0e-9 || (curbHeight <= 1.0e-9 && curbEmbedDepth <= 1.0e-9))
+        {
+            return;
+        }
+
+        var edgeX = inner ? x : x2;
+        var insideX = inner ? x + sign * curbWidth : x2 - sign * curbWidth;
+        var edgeSurfaceY = inner ? topStartY : topEndY;
+        var ratio = componentWidth > 1.0e-9 ? Math.Abs(insideX - x) / componentWidth : 0.0;
+        var insideSurfaceY = topStartY + (topEndY - topStartY) * ratio;
+        var curbTopStartY = edgeSurfaceY;
+        var curbTopInsideY = insideSurfaceY;
+        var points = new PointCollection
+        {
+            new(ox + edgeX * scale, oy - curbTopStartY * scale),
+            new(ox + insideX * scale, oy - curbTopInsideY * scale),
+            new(ox + insideX * scale, oy - (curbTopInsideY - curbHeight - curbEmbedDepth) * scale),
+            new(ox + edgeX * scale, oy - (curbTopStartY - curbHeight - curbEmbedDepth) * scale),
+        };
+        PreviewCanvas.Children.Add(new Polygon
+        {
+            Points = points,
+            Fill = BrushFor(component),
+            Stroke = CurbStrokeBrush,
+            StrokeThickness = 1.2,
+            IsHitTestVisible = false,
+        });
     }
 
     private Polygon CreatePreviewComponentHitTarget(PointCollection points, int index)
@@ -616,17 +740,54 @@ public partial class SubgradeTemplateWindow : Window
             foreach (var component in _components.Where(item => item.Side == side))
             {
                 var w = Math.Max(0.05, component.Width);
-                var topStartY = y + component.Height;
-                var topEndY = topStartY + DisplaySlope(component) * w;
+                var topStartY = y + InnerCurbHeightDelta(component);
+                var topEndY = topStartY + DisplaySlope(component) * w * sign;
                 var x2 = x + sign * w;
                 bounds.Include(x, topStartY);
                 bounds.Include(x2, topEndY);
                 bounds.Include(x, topStartY - 0.5);
                 bounds.Include(x2, topEndY - 0.5);
+                IncludeCurb(component, true, x, x2, topStartY, topEndY, sign, bounds);
+                IncludeCurb(component, false, x, x2, topStartY, topEndY, sign, bounds);
                 x = x2;
-                y = topEndY;
+                y = topEndY + OuterCurbHeightDelta(component);
             }
         }
+    }
+
+    private static void IncludeCurb(
+        SubgradeComponentDto component,
+        bool inner,
+        double x,
+        double x2,
+        double topStartY,
+        double topEndY,
+        double sign,
+        PreviewBounds bounds)
+    {
+        var enabled = inner ? component.HasInnerCurb : component.HasOuterCurb;
+        if (!enabled)
+        {
+            return;
+        }
+
+        var componentWidth = Math.Abs(x2 - x);
+        var curbWidth = Math.Min(
+            componentWidth,
+            Math.Max(0.0, inner ? component.InnerCurbWidth : component.OuterCurbWidth));
+        var curbHeight = Math.Max(0.0, inner ? component.InnerCurbHeight : component.OuterCurbHeight);
+        var curbEmbedDepth = Math.Max(0.0, inner ? component.InnerCurbEmbedDepth : component.OuterCurbEmbedDepth);
+        var edgeX = inner ? x : x2;
+        var insideX = inner ? x + sign * curbWidth : x2 - sign * curbWidth;
+        var edgeSurfaceY = inner ? topStartY : topEndY;
+        var ratio = componentWidth > 1.0e-9 ? Math.Abs(insideX - x) / componentWidth : 0.0;
+        var insideSurfaceY = topStartY + (topEndY - topStartY) * ratio;
+        var curbTopStartY = edgeSurfaceY;
+        var curbTopInsideY = insideSurfaceY;
+        bounds.Include(edgeX, curbTopStartY);
+        bounds.Include(insideX, curbTopInsideY);
+        bounds.Include(edgeX, curbTopStartY - curbHeight - curbEmbedDepth);
+        bounds.Include(insideX, curbTopInsideY - curbHeight - curbEmbedDepth);
     }
 
     private void AddCanvasText(string text, double x, double y, Brush brush, double size)
@@ -683,6 +844,12 @@ public partial class SubgradeTemplateWindow : Window
     private static string SlopeText(SubgradeComponentDto component)
         => $"坡 {Format(DisplaySlope(component))}";
 
+    private static double InnerCurbHeightDelta(SubgradeComponentDto component)
+        => component.HasInnerCurb ? Math.Max(0.0, component.InnerCurbHeight) : 0.0;
+
+    private static double OuterCurbHeightDelta(SubgradeComponentDto component)
+        => component.HasOuterCurb ? -Math.Max(0.0, component.OuterCurbHeight) : 0.0;
+
     private static List<SubgradeComponentDto> BuildDefaults(SubgradeRoadGrade grade)
     {
         return grade switch
@@ -690,7 +857,6 @@ public partial class SubgradeTemplateWindow : Window
             SubgradeRoadGrade.Expressway => Symmetric(new[]
             {
                 (SubgradeComponentType.Median, 1.5),
-                (SubgradeComponentType.CurbStrip, 0.75),
                 (SubgradeComponentType.TravelLane, 7.5),
                 (SubgradeComponentType.HardShoulder, 3.0),
                 (SubgradeComponentType.EarthShoulder, 0.75),
@@ -698,7 +864,6 @@ public partial class SubgradeTemplateWindow : Window
             SubgradeRoadGrade.FirstClass => Symmetric(new[]
             {
                 (SubgradeComponentType.Median, 1.0),
-                (SubgradeComponentType.CurbStrip, 0.5),
                 (SubgradeComponentType.TravelLane, 3.75),
                 (SubgradeComponentType.TravelLane, 3.75),
                 (SubgradeComponentType.HardShoulder, 2.5),
@@ -733,7 +898,6 @@ public partial class SubgradeTemplateWindow : Window
             SubgradeRoadGrade.UrbanArterial => Symmetric(new[]
             {
                 (SubgradeComponentType.Median, 1.5),
-                (SubgradeComponentType.CurbStrip, 0.5),
                 (SubgradeComponentType.TravelLane, 3.5),
                 (SubgradeComponentType.TravelLane, 3.5),
                 (SubgradeComponentType.SideMedian, 1.5),
@@ -742,7 +906,6 @@ public partial class SubgradeTemplateWindow : Window
             }),
             SubgradeRoadGrade.UrbanSubArterial => Symmetric(new[]
             {
-                (SubgradeComponentType.CurbStrip, 0.25),
                 (SubgradeComponentType.TravelLane, 3.5),
                 (SubgradeComponentType.TravelLane, 3.5),
                 (SubgradeComponentType.BikeLane, 2.5),
@@ -751,7 +914,6 @@ public partial class SubgradeTemplateWindow : Window
             SubgradeRoadGrade.UrbanBranch => Symmetric(new[]
             {
                 (SubgradeComponentType.TravelLane, 3.25),
-                (SubgradeComponentType.CurbStrip, 0.25),
                 (SubgradeComponentType.Sidewalk, 2.0),
             }),
             _ => new List<SubgradeComponentDto>(),
@@ -765,29 +927,85 @@ public partial class SubgradeTemplateWindow : Window
         {
             foreach (var item in items)
             {
-                var color = DefaultColor(item.Type);
-                result.Add(new SubgradeComponentDto
+                var color = DefaultColor(side, item.Type);
+                var component = new SubgradeComponentDto
                 {
                     Side = side,
                     Type = item.Type,
                     Width = item.Width,
+                    FixedSlope = DefaultSlope(side, item.Type),
                     ColorR = color.R,
                     ColorG = color.G,
                     ColorB = color.B,
-                });
+                };
+                ApplyDefaultCurbParameters(component);
+                result.Add(component);
             }
         }
 
         return result;
     }
 
-    private static Rgb DefaultColor(SubgradeComponentType type)
-        => type switch
+    private static void ApplyDefaultCurbParameters(SubgradeComponentDto component)
+    {
+        if (component.Type != SubgradeComponentType.Median)
         {
-            SubgradeComponentType.Median or SubgradeComponentType.SideMedian => new Rgb(0, 120, 0),
-            SubgradeComponentType.TravelLane or SubgradeComponentType.HardShoulder or SubgradeComponentType.BikeLane or SubgradeComponentType.CurbStrip => new Rgb(0, 90, 180),
+            return;
+        }
+
+        component.HasOuterCurb = true;
+        component.OuterCurbWidth = 0.15;
+        component.OuterCurbHeight = 0.15;
+        component.OuterCurbEmbedDepth = 0.15;
+    }
+
+    private static Rgb DefaultColor(SubgradeSide side, SubgradeComponentType type)
+        => AciColorToRgb(DefaultColorIndex(side, type));
+
+    private static int DefaultColorIndex(SubgradeSide side, SubgradeComponentType type)
+    {
+        var left = side == SubgradeSide.Left;
+        return type switch
+        {
+            SubgradeComponentType.Median => left ? 42 : 52,
+            SubgradeComponentType.SideMedian => left ? 92 : 102,
+            SubgradeComponentType.TravelLane => left ? 32 : 62,
+            SubgradeComponentType.HardShoulder or SubgradeComponentType.BikeLane => left ? 22 : 72,
+            SubgradeComponentType.EarthShoulder or SubgradeComponentType.Sidewalk => left ? 12 : 82,
+            SubgradeComponentType.CurbStrip => left ? 43 : 61,
+            _ => 7,
+        };
+    }
+
+    private static Rgb AciColorToRgb(int colorIndex)
+        => colorIndex switch
+        {
+            7 => new Rgb(255, 255, 255),
+            12 => new Rgb(204, 0, 0),
+            22 => new Rgb(204, 51, 0),
+            32 => new Rgb(204, 102, 0),
+            42 => new Rgb(204, 153, 0),
+            43 => new Rgb(204, 178, 102),
+            52 => new Rgb(204, 204, 0),
+            61 => new Rgb(223, 255, 127),
+            62 => new Rgb(153, 204, 0),
+            72 => new Rgb(102, 204, 0),
+            82 => new Rgb(51, 204, 0),
+            92 => new Rgb(0, 204, 0),
+            102 => new Rgb(0, 204, 51),
             _ => new Rgb(120, 120, 120),
         };
+
+    private static double DefaultSlope(SubgradeSide side, SubgradeComponentType type)
+    {
+        var sign = side == SubgradeSide.Left ? 1.0 : -1.0;
+        return type switch
+        {
+            SubgradeComponentType.TravelLane or SubgradeComponentType.HardShoulder or SubgradeComponentType.CurbStrip => sign * 0.02,
+            SubgradeComponentType.EarthShoulder => sign * 0.03,
+            _ => 0.0,
+        };
+    }
 
     private static SolidColorBrush BrushFor(SubgradeComponentDto component)
         => new(Color.FromRgb(

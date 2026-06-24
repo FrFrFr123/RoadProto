@@ -35,15 +35,18 @@ public sealed record SubgradeComponentArgument(
     string Side,
     string Type,
     double Width,
-    double Height,
     string SlopeMode,
     double FixedSlope,
     AgentColor? Color,
     IReadOnlyList<AgentStationValue> WideningTable,
     IReadOnlyList<AgentStationValue> VariableSlopeTable,
+    AgentCurb InnerCurb,
+    AgentCurb OuterCurb,
     AgentPavementLayer PavementLayer);
 
 public sealed record AgentColor(int R, int G, int B);
+
+public sealed record AgentCurb(bool Enabled, double Width, double Height, double EmbedDepth);
 
 public sealed record AgentStationValue(double Station, double Value);
 

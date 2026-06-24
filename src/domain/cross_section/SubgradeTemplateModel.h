@@ -59,6 +59,14 @@ struct SubgradeTemplateComponent {
     SubgradeTemplateRgbColor color;
     std::vector<SubgradeStationValue> wideningTable;
     std::vector<SubgradeStationValue> variableSlopeTable;
+    bool hasInnerCurb = false;
+    double innerCurbWidth = 0.0;
+    double innerCurbHeight = 0.0;
+    double innerCurbEmbedDepth = 0.0;
+    bool hasOuterCurb = false;
+    double outerCurbWidth = 0.0;
+    double outerCurbHeight = 0.0;
+    double outerCurbEmbedDepth = 0.0;
     bool pavementLayerLinked = false;
     std::wstring pavementLayerHandle;
     std::wstring pavementLayerName;
@@ -81,6 +89,9 @@ class SubgradeTemplateDefaults {
 public:
     static SubgradeTemplateData create(RoadGrade grade);
     static SubgradeTemplateRgbColor defaultColorFor(SubgradeComponentType type);
+    static SubgradeTemplateRgbColor defaultColorFor(SubgradeSide side, SubgradeComponentType type);
+    static int defaultColorIndexFor(SubgradeSide side, SubgradeComponentType type);
+    static double defaultSlopeFor(SubgradeSide side, SubgradeComponentType type);
 };
 
 class SubgradeTemplateRules {
@@ -88,6 +99,12 @@ public:
     static bool isSupportedDisplayScale(double displayScale);
     static double widthAtStation(const SubgradeTemplateComponent& component, double station);
     static double slopeAtStation(const SubgradeTemplateComponent& component, double station);
+    static double slopeElevationDeltaAtStation(
+        const SubgradeTemplateComponent& component,
+        double width,
+        double station);
+    static double innerCurbHeightDelta(const SubgradeTemplateComponent& component);
+    static double outerCurbHeightDelta(const SubgradeTemplateComponent& component);
     static double effectivePavementThickness(const SubgradeTemplateComponent& component);
     static bool normalize(SubgradeTemplateData& data, std::wstring& errorMessage);
 };

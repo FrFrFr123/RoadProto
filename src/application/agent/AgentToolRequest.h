@@ -35,6 +35,13 @@ struct AgentToolPavementLayer {
     double thickness = 0.0;
 };
 
+struct AgentToolCurb {
+    bool enabled = false;
+    double width = 0.0;
+    double height = 0.0;
+    double embedDepth = 0.0;
+};
+
 struct AgentToolSubgradeComponent {
     std::wstring side;
     bool hasSide = false;
@@ -42,13 +49,14 @@ struct AgentToolSubgradeComponent {
     bool hasType = false;
     double width = 0.0;
     bool hasWidth = false;
-    double height = 0.0;
     std::wstring slopeMode = L"Fixed";
     bool hasSlopeMode = false;
     double fixedSlope = 0.0;
     AgentToolColor color;
     std::vector<AgentToolStationValue> wideningTable;
     std::vector<AgentToolStationValue> variableSlopeTable;
+    AgentToolCurb innerCurb;
+    AgentToolCurb outerCurb;
     AgentToolPavementLayer pavementLayer;
 };
 

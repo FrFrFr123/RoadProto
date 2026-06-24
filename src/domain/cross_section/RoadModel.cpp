@@ -1003,10 +1003,13 @@ SubgradeOuterEdge subgradeOuterEdgeAtStation(
     const auto components = componentsForSide(data, side);
     for (const auto* component : components) {
         const double width = SubgradeTemplateRules::widthAtStation(*component, station);
-        const double slope = SubgradeTemplateRules::slopeAtStation(*component, station);
         edge.offset += width;
-        const double innerElevationOffset = edge.elevationOffset + component->height;
-        edge.elevationOffset = innerElevationOffset + std::fabs(width) * slope;
+        const double innerElevationOffset =
+            edge.elevationOffset + SubgradeTemplateRules::innerCurbHeightDelta(*component);
+        const double outerElevationOffset =
+            innerElevationOffset + SubgradeTemplateRules::slopeElevationDeltaAtStation(*component, width, station);
+        edge.elevationOffset =
+            outerElevationOffset + SubgradeTemplateRules::outerCurbHeightDelta(*component);
     }
     return edge;
 }
@@ -1257,9 +1260,13 @@ void appendTemplateBoundaryPoints(
         for (std::size_t index = 0; index < components.size(); ++index) {
             const auto& component = *components[index];
             const double width = SubgradeTemplateRules::widthAtStation(component, frame.station);
-            const double slope = SubgradeTemplateRules::slopeAtStation(component, frame.station);
-            const double innerElevationOffset = elevationOffset + component.height;
-            const double outerElevationOffset = innerElevationOffset + std::fabs(width) * slope;
+            const double innerElevationOffset =
+                elevationOffset + SubgradeTemplateRules::innerCurbHeightDelta(component);
+            const double outerElevationOffset =
+                innerElevationOffset + SubgradeTemplateRules::slopeElevationDeltaAtStation(
+                    component,
+                    width,
+                    frame.station);
 
             points.push_back(
                 ActiveBoundaryPoint{
@@ -1289,7 +1296,7 @@ void appendTemplateBoundaryPoints(
                     centerElevation + outerElevationOffset});
 
             offset += width;
-            elevationOffset = outerElevationOffset;
+            elevationOffset = outerElevationOffset + SubgradeTemplateRules::outerCurbHeightDelta(component);
         }
     }
 }
@@ -1351,9 +1358,13 @@ bool appendPavementLayerBoundaryPoints(
         for (std::size_t index = 0; index < components.size(); ++index) {
             const auto& component = *components[index];
             const double width = SubgradeTemplateRules::widthAtStation(component, frame.station);
-            const double slope = SubgradeTemplateRules::slopeAtStation(component, frame.station);
-            const double innerElevationOffset = elevationOffset + component.height;
-            const double outerElevationOffset = innerElevationOffset + std::fabs(width) * slope;
+            const double innerElevationOffset =
+                elevationOffset + SubgradeTemplateRules::innerCurbHeightDelta(component);
+            const double outerElevationOffset =
+                innerElevationOffset + SubgradeTemplateRules::slopeElevationDeltaAtStation(
+                    component,
+                    width,
+                    frame.station);
 
             if (component.pavementLayerLinked) {
                 if (component.pavementLayerHandle.empty()) {
@@ -1451,7 +1462,7 @@ bool appendPavementLayerBoundaryPoints(
             }
 
             offset += width;
-            elevationOffset = outerElevationOffset;
+            elevationOffset = outerElevationOffset + SubgradeTemplateRules::outerCurbHeightDelta(component);
         }
     }
 

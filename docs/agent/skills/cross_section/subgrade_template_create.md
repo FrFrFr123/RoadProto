@@ -117,14 +117,30 @@
 - `displayScale`：显示比例。
 - `roadGrade`：道路等级。
 - `roadCenterlineHandle`：本版保留字段，缺省为空，不主动绑定道路中线。
-- `components[].height`：高度差，缺省为 `0`。
 - `components[].slopeMode`：坡度模式，缺省为 `Fixed`。
 - `components[].fixedSlope`：固定坡度，缺省为 `0`。
 - `components[].color`：RGB 颜色，缺省时由 C++ 默认颜色规则提供。
 - `components[].wideningTable`：变宽表，缺省为空。
 - `components[].variableSlopeTable`：变化坡度表，缺省为空。
+- `components[].innerCurb`：内侧路缘石，缺省为未启用。
+- `components[].outerCurb`：外侧路缘石，缺省为未启用。
 - `components[].pavementLayer`：路面结构层模板引用，缺省为未绑定。
 - `componentOperations[]`：默认参数基础上的局部部件操作，缺省为空数组。
+
+`innerCurb` / `outerCurb` 字段结构一致：
+
+```json
+{
+  "enabled": true,
+  "width": 0.2,
+  "height": 0.18,
+  "embedDepth": 0.12
+}
+```
+
+路缘石宽度在当前部件内部重复表达，不扣减部件总宽。
+
+路缘石高度用于驱动部件高差：`innerCurb.height` 影响当前部件内侧起点，`outerCurb.height` 影响外侧相邻部件起点。旧 `components[].height` 高度差字段不再使用。
 
 ## 枚举
 
@@ -217,9 +233,8 @@ OutermostMotorLane
   "side": "Left",
   "type": "TravelLane",
   "width": 3.75,
-  "height": 0,
   "slopeMode": "Fixed",
-  "fixedSlope": -0.02,
+  "fixedSlope": 0.02,
   "color": {
     "r": 0,
     "g": 90,
@@ -229,8 +244,20 @@ OutermostMotorLane
     { "station": 0, "value": 0 }
   ],
   "variableSlopeTable": [
-    { "station": 0, "value": -0.02 }
+    { "station": 0, "value": 0.02 }
   ],
+  "innerCurb": {
+    "enabled": false,
+    "width": 0,
+    "height": 0,
+    "embedDepth": 0
+  },
+  "outerCurb": {
+    "enabled": false,
+    "width": 0,
+    "height": 0,
+    "embedDepth": 0
+  },
   "pavementLayer": {
     "linked": false,
     "handle": "",

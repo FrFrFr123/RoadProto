@@ -263,6 +263,28 @@ bool readOptionalPavementLayer(
         readOptionalNumber(pavementLayer, L"thickness", path + L".pavementLayer.thickness", target.thickness, errorMessage);
 }
 
+bool readOptionalCurb(
+    const AgentJsonValue* owner,
+    const std::wstring& key,
+    const std::wstring& path,
+    AgentToolCurb& target,
+    std::wstring& errorMessage)
+{
+    const auto* curb = owner->find(key);
+    if (curb == nullptr) {
+        return true;
+    }
+    if (!curb->isObject()) {
+        errorMessage = path + L"." + key + L" must be an object.";
+        return false;
+    }
+    const auto curbPath = path + L"." + key;
+    return readOptionalBoolean(curb, L"enabled", curbPath + L".enabled", target.enabled, errorMessage) &&
+        readOptionalNumber(curb, L"width", curbPath + L".width", target.width, errorMessage) &&
+        readOptionalNumber(curb, L"height", curbPath + L".height", target.height, errorMessage) &&
+        readOptionalNumber(curb, L"embedDepth", curbPath + L".embedDepth", target.embedDepth, errorMessage);
+}
+
 } // namespace
 
 AgentToolRequest parseAgentToolRequestJson(const std::string& text, std::wstring& errorMessage)
@@ -367,12 +389,13 @@ AgentToolRequest parseAgentToolRequestJson(const std::string& text, std::wstring
                 component.width = width->numberValue;
                 component.hasWidth = true;
             }
-            if (!readOptionalNumber(&item, L"height", path + L".height", component.height, errorMessage) ||
-                !readOptionalString(&item, L"slopeMode", path + L".slopeMode", component.slopeMode, component.hasSlopeMode, errorMessage) ||
+            if (!readOptionalString(&item, L"slopeMode", path + L".slopeMode", component.slopeMode, component.hasSlopeMode, errorMessage) ||
                 !readOptionalNumber(&item, L"fixedSlope", path + L".fixedSlope", component.fixedSlope, errorMessage) ||
                 !readOptionalColor(&item, path, component.color, errorMessage) ||
                 !readOptionalStationValueTable(&item, L"wideningTable", path + L".wideningTable", component.wideningTable, errorMessage) ||
                 !readOptionalStationValueTable(&item, L"variableSlopeTable", path + L".variableSlopeTable", component.variableSlopeTable, errorMessage) ||
+                !readOptionalCurb(&item, L"innerCurb", path, component.innerCurb, errorMessage) ||
+                !readOptionalCurb(&item, L"outerCurb", path, component.outerCurb, errorMessage) ||
                 !readOptionalPavementLayer(&item, path, component.pavementLayer, errorMessage)) {
                 return {};
             }

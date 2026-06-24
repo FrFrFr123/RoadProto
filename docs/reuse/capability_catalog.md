@@ -47,9 +47,9 @@
 | 纵断面竖曲线图形分段计划 | V0.1.9 follow-up 原型，输出直坡设计段、曲线设计段和 BVC/PVI/EVC 理论切线段，用于 CAD 分色绘制 | `src/domain/profile/ProfileVerticalCurveDisplayPlanner.*` |
 | 纵断面竖曲线自定义实体 | V0.1.9 follow-up 原型，独立关联拉坡图，支持 DWG 持久化、拉坡图 frame 映射、直坡/曲线/理论切线分色绘制、起终点/PVI/半径夹点和 PVI 增删 | `src/cad_adapter/objectarx/profile/DnProfileVerticalCurveEntity.*` |
 | 纵断面竖曲线 WPF 编辑 Bridge | V0.1.9 follow-up 原型，通过请求/响应文件编辑名称、起终点、PVI 高程和半径，并由 C++ 严格解析后回写实体 | `src/cad_adapter/objectarx/profile/ProfileVerticalCurveDialogBridge.*` |
-| 路基模板领域模型与默认值 | V0.1.19 原型，支持道路等级、左右侧部件、宽度、高度差、固定/变化坡度、变宽表、坡度变化表、颜色和路面结构层模板 handle 关联；二级、三级、四级道路已有默认组成 | `src/domain/cross_section/SubgradeTemplateModel.*` |
-| 路基模板自定义实体 | V0.1.13 原型，独立绘制中线和左右侧部件，支持中文部件标注、DWG 持久化、几何范围、变换和插入点夹点移动 | `src/cad_adapter/objectarx/cross_section/DnSubgradeTemplateEntity.*` |
-| 路基模板 WPF 编辑 Bridge | V0.1.10 原型，通过请求/响应文件编辑模板参数、部件参数、变宽表和坡度变化表 | `src/cad_adapter/objectarx/cross_section/SubgradeTemplateDialogBridge.*` |
+| 路基模板领域模型与默认值 | V0.1.19 原型，支持道路等级、左右侧部件、宽度、固定/变化坡度、变宽表、坡度变化表、按 ACI 色号派生的默认颜色、左右侧默认坡度、内外侧路缘石、路缘石高度驱动部件高差和路面结构层模板 handle 关联；默认模板初始部件不包含路缘带，中分带外侧默认启用宽度、高度和埋深均为 `0.15` 的路缘石，旧高度差输入已删除 | `src/domain/cross_section/SubgradeTemplateModel.*` |
+| 路基模板自定义实体 | V0.1.13 原型，独立绘制中线和左右侧部件，支持中文部件标注、内外侧路缘石叠画、DWG 持久化、几何范围、变换和插入点夹点移动 | `src/cad_adapter/objectarx/cross_section/DnSubgradeTemplateEntity.*` |
+| 路基模板 WPF 编辑 Bridge | V0.1.10 原型，通过请求/响应文件编辑模板参数、部件参数、内外侧路缘石、变宽表和坡度变化表 | `src/cad_adapter/objectarx/cross_section/SubgradeTemplateDialogBridge.*` |
 | 边坡模板领域模型与默认值 | V0.1.14 原型，支持填方/挖方预设、边坡/护坡道部件、坡率/坡高/宽度三选二、部件级搜索增值和交地控制条件 | `src/domain/cross_section/SlopeTemplateModel.*` |
 | 边坡模板自定义实体 | V0.1.14 原型，独立线框显示边坡模板，支持 DWG 持久化、几何范围、变换和双击编辑入口 | `src/cad_adapter/objectarx/cross_section/DnSlopeTemplateEntity.*` |
 | 边坡模板 WPF 编辑 Bridge | V0.1.14 原型，通过请求/响应文件编辑边坡模板参数和部件列表 | `src/cad_adapter/objectarx/cross_section/SlopeTemplateDialogBridge.*` |
@@ -114,8 +114,9 @@
 ## V0.1.10 路基模板复用边界
 
 - `SubgradeTemplateModel` 是路基模板参数核心能力，不依赖 ObjectARX，可复用于横断面设计、标准断面库、三维建模和出图。
-- `SubgradeTemplateDefaults` 保存高速公路、城市快速路以及二级、三级、四级道路默认组成，后续新增道路等级默认值时应继续在 domain 层扩展。
-- `SubgradeTemplateRules` 保存显示比例、宽度加宽、坡度查询、变化坡度固定值隔离和路面结构层模板引用归一化规则。
+- `SubgradeTemplateDefaults` 保存道路等级默认组成、按左右侧和部件类型派生的 ACI 默认色号、RGB 默认色和默认坡度，后续新增道路等级默认值时应继续在 domain 层扩展。
+- `SubgradeTemplateRules` 保存显示比例、宽度加宽、坡度查询、变化坡度固定值隔离、内外侧路缘石归一化和路面结构层模板引用归一化规则。
+- 路缘石宽度在当前部件内部重复绘制，不扣减部件总宽；默认模板初始部件不包含路缘带，用户仍可手动新增 `CurbStrip`；中分带外侧路缘石默认启用，宽度、高度和埋深均为 `0.15`。
 - `SubgradeTemplateCreateService` 只生成默认模板数据，不处理 CAD 点取和 WPF 交互。
 - `DnSubgradeTemplateEntity` 是 CAD 持久化和显示能力，负责绘制中线、左右侧部件和 DWG 保存重开。
 - `DnSubgradeTemplateEntity` 提供插入点夹点，支持模板实体在图中整体移动。

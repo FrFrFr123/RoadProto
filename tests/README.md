@@ -25,7 +25,7 @@ artifacts\x64\Debug\RoadProtoCoreTests.exe
 - 纵断面竖曲线领域规则：默认设计线创建、PVI 对称二次抛物线、BVC/EVC、高低点、任意桩号高程和坡度、PVI 增删、半径更新和命令元数据。
 - 横断面边坡模板领域规则：填方/挖方默认预设、坡率/坡高/宽度三选二约束、重复最后一组识别、编码转换和模板组优先级解析。
 - 横断面路面结构层模板规则：上面层/中面层/下面层/沥青封层/基层/底基层/垫层/搭板编码、结构代号、路基干湿类型、路面类型、路基土组、设计弯沉、累计轴次、等厚/内外侧非等厚、内外侧正/负加宽、顶边沿上一层底边所在直线延长或收回、四边形/梯形轮廓定义、`1:n` 正/负坡度驱动当前层顶边到底边的侧边水平移动、路面结构层创建时直接套用“沥青路面-主线行车道”预设并保留创建向导源码、向导内外侧厚度/加宽/坡度输入、文档预设初始值、所有预设预览宽度默认 `3`、WPF 白色引线式层名厚度标注贴合顶边且标注文字/引线/下划线/箭头均使用固定模型尺寸、主线路缘带移除、`.rpavement.xml` 流转、路基部件点选绑定和模板实体源码契约。
-- 横断面道路模型边坡和线框规则：从路基模板最外侧生成边坡线、路基部件高度差在当前部件内侧形成垂直台阶且不摊入当前部件坡度、构造物范围按左侧/右侧/两侧跳过边坡放坡、读取部件绑定的路面结构层模板并生成结构层边界线和弱化填充面、TIN 地面剖切交地、断面地面快照、边坡模板戴帽结果、生成进度回调、采样桩号保存、断面节点链、三维网格线框、查看横断面预览、预览拖动缩放、批量绘制横断面 `DnRoadModelSectionDrawingEntity` 自定义实体源码契约、横断面图配置 CSV、路基类型多选、同一路基部件配置行优先级、结构层面域来源字段和 `manualEdited` 夹点编辑契约。
+- 横断面道路模型边坡和线框规则：从路基模板最外侧生成边坡线、路基模板坡度按旋转符号换算外向高程、路缘石高度驱动当前或外侧相邻部件高差、构造物范围按左侧/右侧/两侧跳过边坡放坡、读取部件绑定的路面结构层模板并生成结构层边界线和弱化填充面、TIN 地面剖切交地、断面地面快照、边坡模板戴帽结果、生成进度回调、采样桩号保存、断面节点链、三维网格线框、查看横断面预览、预览拖动缩放、批量绘制横断面 `DnRoadModelSectionDrawingEntity` 自定义实体源码契约、横断面图配置 CSV、路基类型多选、同一路基部件配置行优先级、结构层面域来源字段和 `manualEdited` 夹点编辑契约。
 - 出图出表规则：`DRAWING_QUANTITY` 模块命令元数据、Ribbon 入口、横断面图实体当前面域优先采样、构造物范围切段、部件/结构层双模式聚合、结构层平面投影面积、平均断面法体积、依照路面面积方法体积和 SpreadsheetML `.xls` 动态列写出；路面结构图例覆盖模板列规划、表头列宽、结构图示不写层类型文字、厚度厘米表达、底部图例不合并、道路模型/横断面图选择入口和普通 CAD 图元源码契约。
 - 文档和版本 source-contract：检查 `build/RoadProto.Build.props`、README、版本记录、业务文档和复用文档的 v0.1.31 横断面图配置发布信息，同时保留 v0.1.27 构造物范围和 v0.1.26 查看横断面外框与桩号白色记录。
 
@@ -115,7 +115,7 @@ AutoCAD 图形界面需要手工验证 `RD_PROFILE_VERTICAL_CURVE_CREATE`、`RD_
 
 ## V0.1.10 路基模板验证范围
 
-核心测试覆盖 `SubgradeTemplateDefaults` 的高速公路、城市快速路以及二级、三级、四级道路默认部件、颜色约定、显示比例、变宽表宽度计算、坡度变化表取值、路面结构层模板引用归一化和 `SubgradeTemplateCreateService` 默认创建结果。
+核心测试覆盖 `SubgradeTemplateDefaults` 的道路等级默认部件、默认模板删除路缘带、默认中分带外侧路缘石、按左右侧和部件类型派生的 ACI 默认色号/RGB 默认色、左右侧默认坡度、显示比例、变宽表宽度计算、坡度变化表取值、内外侧路缘石归一化、路面结构层模板引用归一化和 `SubgradeTemplateCreateService` 默认创建结果。
 
 核心测试覆盖 `CROSS_SECTION` 模块中 `RD_SECTION_SUBGRADE_TEMPLATE_CREATE`、`RD_SECTION_SUBGRADE_TEMPLATE_EDIT_HANDLE` 和 `RD_SECTION_SUBGRADE_TEMPLATE_APPLY_DIALOG_FILE` 的命令元数据、模块启动注册和托管 Ribbon 源码中的 `DNSUBGRADETEMPLATEENTITY` 双击编辑入口。
 
@@ -123,20 +123,21 @@ AutoCAD 图形界面需要手工验证 `RD_SECTION_SUBGRADE_TEMPLATE_CREATE`、`
 
 - 点击 `RoadProto / 横断面设计 / 创建路基模板` 后，命令只要求点取插入点，不要求选择道路中线。
 - 参数窗口可修改模板名称、显示比例、道路等级和左右侧部件参数。
+- 参数窗口可分别配置内侧路缘石和外侧路缘石的启用状态、宽度、高度和埋深；默认中分带外侧路缘石宽度、高度和埋深均为 `0.15`；路缘石宽度不扣减部件总宽。
 - 预览图中线清晰可见，部件宽度和坡度文字不遮挡右侧 UI，点选部件、左右按钮、新增和删除部件可正常工作。
 - 变宽表和坡度变化数据表二级窗口可新增、删除和保存桩号数据；坡度选择变化值时固定坡度输入置灰。
 - 任意部件类型均可勾选启用路面结构层模板，并通过“选择结构层模板”点选 DWG 中的 `DnPavementLayerTemplateEntity` 回填模板 handle 和名称；“清除结构层模板”会清空当前部件绑定。
-- 确认后图中生成 `DnSubgradeTemplateEntity`，显示中线和左右侧路基部件，部件标注使用中文。
+- 确认后图中生成 `DnSubgradeTemplateEntity`，显示中线和左右侧路基部件，部件标注使用竖向中文文字以减少横向重叠。
 - 双击实体可重新打开同一参数窗口，并显示上次保存的配置；修改后实体刷新。
 - 保存 DWG 后重开并 `REGEN`，路基模板实体和参数保持正常。
 
 ## V0.1.11 横断面戴帽道路模型验证范围
 
-核心测试覆盖 `RoadModelTemplateResolver` 的模板优先级解析、`RoadModelStationSampler` 的采样点收集、`RoadModelBuilder` 的三维部件线、路基部件高度差内侧垂直台阶、结构层顶边继承该台阶语义、断面节点链、网格线框生成和 `RoadModelBuildService` 的配置校验。
+核心测试覆盖 `RoadModelTemplateResolver` 的模板优先级解析、`RoadModelStationSampler` 的采样点收集、`RoadModelBuilder` 的三维部件线、路基模板坡度方向、路缘石高度驱动部件高差、结构层顶边继承该台阶语义、断面节点链、网格线框生成和 `RoadModelBuildService` 的配置校验。
 
 核心测试覆盖 `CROSS_SECTION` 模块中 `RD_SECTION_ROAD_MODEL_CREATE`、`RD_SECTION_ROAD_MODEL_EDIT`、`RD_SECTION_ROAD_MODEL_EDIT_HANDLE` 和 `RD_SECTION_ROAD_MODEL_APPLY_DIALOG_FILE` 的命令元数据、业务文档路径和 Ribbon 可见入口。
 
-核心测试通过源码契约覆盖 `RoadModelDialogBridge`、`DnRoadModelEntity`、`DnSubgradeTemplateEntity` 和 `ObjectArxRoadModelCommand` 的关键 ObjectARX 接入点：请求/响应文件字段、道路模型实体 DWG 持久化、三维网格线框绘制、路面结构层四点 `polygon` 弱化填充、路基模板移动夹点、初始化卸载、创建/编辑/回写命令流程、行内点选模板和竖曲线归属校验。
+核心测试通过源码契约覆盖 `RoadModelDialogBridge`、`DnRoadModelEntity`、`DnSubgradeTemplateEntity` 和 `ObjectArxRoadModelCommand` 的关键 ObjectARX 接入点：请求/响应文件字段、道路模型实体 DWG 持久化、三维网格线框绘制、路面结构层四点 `polygon` 弱化填充、路基模板移动夹点、部件中文标注竖向绘制、初始化卸载、创建/编辑/回写命令流程、行内点选模板和竖曲线归属校验。
 
 托管桥接测试覆盖道路模型 WPF 请求/响应文件读写、点选模板动作字段和行号字段，并检查 `RoadModelWindow.xaml` 中只读道路中线 handle 文本框必须使用 OneWay 绑定，避免打开横断面戴帽窗口时触发 WPF TwoWay 绑定只读属性异常。
 

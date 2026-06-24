@@ -418,7 +418,7 @@ void subgradeTemplateDefaultsBuildExpressway()
     CHECK(data.properties.roadGrade == RoadGrade::Expressway);
     CHECK(data.properties.name == L"\u9ed8\u8ba4\u8def\u57fa\u6a21\u677f");
     CHECK(std::fabs(data.properties.displayScale - 10.0) < 1.0e-9);
-    CHECK(data.components.size() == 10);
+    CHECK(data.components.size() == 8);
 
     std::vector<SubgradeTemplateComponent> left;
     std::vector<SubgradeTemplateComponent> right;
@@ -430,33 +430,87 @@ void subgradeTemplateDefaultsBuildExpressway()
         }
     }
 
-    CHECK(left.size() == 5);
-    CHECK(right.size() == 5);
+    CHECK(left.size() == 4);
+    CHECK(right.size() == 4);
     CHECK(left[0].type == SubgradeComponentType::Median);
     CHECK(std::fabs(left[0].width - 1.5) < 1.0e-9);
-    CHECK(left[1].type == SubgradeComponentType::CurbStrip);
-    CHECK(std::fabs(left[1].width - 0.75) < 1.0e-9);
-    CHECK(left[2].type == SubgradeComponentType::TravelLane);
-    CHECK(std::fabs(left[2].width - 7.5) < 1.0e-9);
-    CHECK(left[3].type == SubgradeComponentType::HardShoulder);
-    CHECK(std::fabs(left[3].width - 3.0) < 1.0e-9);
-    CHECK(left[4].type == SubgradeComponentType::EarthShoulder);
-    CHECK(std::fabs(left[4].width - 0.75) < 1.0e-9);
+    CHECK(left[1].type == SubgradeComponentType::TravelLane);
+    CHECK(std::fabs(left[1].width - 7.5) < 1.0e-9);
+    CHECK(left[2].type == SubgradeComponentType::HardShoulder);
+    CHECK(std::fabs(left[2].width - 3.0) < 1.0e-9);
+    CHECK(left[3].type == SubgradeComponentType::EarthShoulder);
+    CHECK(std::fabs(left[3].width - 0.75) < 1.0e-9);
 
     CHECK(right[0].type == SubgradeComponentType::Median);
     CHECK(std::fabs(right[0].width - left[0].width) < 1.0e-9);
-    CHECK(right[4].type == SubgradeComponentType::EarthShoulder);
-    CHECK(std::fabs(right[4].width - left[4].width) < 1.0e-9);
+    CHECK(right[3].type == SubgradeComponentType::EarthShoulder);
+    CHECK(std::fabs(right[3].width - left[3].width) < 1.0e-9);
 
-    CHECK(left[0].color.r == 0);
-    CHECK(left[0].color.g == 120);
+    CHECK(SubgradeTemplateDefaults::defaultColorIndexFor(SubgradeSide::Left, SubgradeComponentType::Median) == 42);
+    CHECK(SubgradeTemplateDefaults::defaultColorIndexFor(SubgradeSide::Right, SubgradeComponentType::Median) == 52);
+    CHECK(SubgradeTemplateDefaults::defaultColorIndexFor(SubgradeSide::Left, SubgradeComponentType::TravelLane) == 32);
+    CHECK(SubgradeTemplateDefaults::defaultColorIndexFor(SubgradeSide::Right, SubgradeComponentType::TravelLane) == 62);
+    CHECK(SubgradeTemplateDefaults::defaultColorIndexFor(SubgradeSide::Left, SubgradeComponentType::HardShoulder) == 22);
+    CHECK(SubgradeTemplateDefaults::defaultColorIndexFor(SubgradeSide::Right, SubgradeComponentType::HardShoulder) == 72);
+    CHECK(SubgradeTemplateDefaults::defaultColorIndexFor(SubgradeSide::Left, SubgradeComponentType::EarthShoulder) == 12);
+    CHECK(SubgradeTemplateDefaults::defaultColorIndexFor(SubgradeSide::Right, SubgradeComponentType::EarthShoulder) == 82);
+    CHECK(SubgradeTemplateDefaults::defaultColorIndexFor(SubgradeSide::Left, SubgradeComponentType::CurbStrip) == 43);
+    CHECK(SubgradeTemplateDefaults::defaultColorIndexFor(SubgradeSide::Right, SubgradeComponentType::CurbStrip) == 61);
+
+    CHECK(left[0].color.r == 204);
+    CHECK(left[0].color.g == 153);
     CHECK(left[0].color.b == 0);
-    CHECK(left[2].color.r == 0);
-    CHECK(left[2].color.g == 90);
-    CHECK(left[2].color.b == 180);
-    CHECK(left[4].color.r == 120);
-    CHECK(left[4].color.g == 120);
-    CHECK(left[4].color.b == 120);
+    CHECK(right[0].color.r == 204);
+    CHECK(right[0].color.g == 204);
+    CHECK(right[0].color.b == 0);
+    CHECK(left[1].color.r == 204);
+    CHECK(left[1].color.g == 102);
+    CHECK(left[1].color.b == 0);
+    CHECK(right[1].color.r == 153);
+    CHECK(right[1].color.g == 204);
+    CHECK(right[1].color.b == 0);
+
+    CHECK(std::fabs(left[0].fixedSlope) < 1.0e-9);
+    CHECK(std::fabs(left[1].fixedSlope - 0.02) < 1.0e-9);
+    CHECK(std::fabs(left[2].fixedSlope - 0.02) < 1.0e-9);
+    CHECK(std::fabs(left[3].fixedSlope - 0.03) < 1.0e-9);
+    CHECK(std::fabs(right[1].fixedSlope + 0.02) < 1.0e-9);
+    CHECK(std::fabs(right[2].fixedSlope + 0.02) < 1.0e-9);
+    CHECK(std::fabs(right[3].fixedSlope + 0.03) < 1.0e-9);
+}
+
+void subgradeTemplateDefaultsGiveMedianOuterCurbs()
+{
+    using namespace roadproto::domain::cross_section;
+
+    const std::vector<RoadGrade> grades = {
+        RoadGrade::Expressway,
+        RoadGrade::FirstClass,
+        RoadGrade::SecondClass,
+        RoadGrade::ThirdClass,
+        RoadGrade::FourthClass,
+        RoadGrade::UrbanExpressway,
+        RoadGrade::UrbanArterial,
+        RoadGrade::UrbanSubArterial,
+        RoadGrade::UrbanBranch,
+    };
+
+    int medianCount = 0;
+    for (const auto grade : grades) {
+        const auto data = SubgradeTemplateDefaults::create(grade);
+        for (const auto& component : data.components) {
+            if (component.type != SubgradeComponentType::Median) {
+                continue;
+            }
+
+            ++medianCount;
+            CHECK(component.hasOuterCurb);
+            CHECK(std::fabs(component.outerCurbWidth - 0.15) < 1.0e-9);
+            CHECK(std::fabs(component.outerCurbHeight - 0.15) < 1.0e-9);
+            CHECK(std::fabs(component.outerCurbEmbedDepth - 0.15) < 1.0e-9);
+        }
+    }
+    CHECK(medianCount == 8);
 }
 
 void subgradeTemplateDefaultsBuildUrbanExpressway()
@@ -525,7 +579,6 @@ void subgradeTemplateDefaultsBuildHighwayGradesFromRoadClassProfiles()
         firstClassLeft,
         {
             {SubgradeComponentType::Median, 1.0},
-            {SubgradeComponentType::CurbStrip, 0.5},
             {SubgradeComponentType::TravelLane, 3.75},
             {SubgradeComponentType::TravelLane, 3.75},
             {SubgradeComponentType::HardShoulder, 2.5},
@@ -578,7 +631,6 @@ void subgradeTemplateDefaultsBuildUrbanRoadClassProfiles()
         subgradeComponentsForSide(arterial, SubgradeSide::Left),
         {
             {SubgradeComponentType::Median, 1.5},
-            {SubgradeComponentType::CurbStrip, 0.5},
             {SubgradeComponentType::TravelLane, 3.5},
             {SubgradeComponentType::TravelLane, 3.5},
             {SubgradeComponentType::SideMedian, 1.5},
@@ -591,7 +643,6 @@ void subgradeTemplateDefaultsBuildUrbanRoadClassProfiles()
     checkSubgradeSideProfile(
         subgradeComponentsForSide(subArterial, SubgradeSide::Left),
         {
-            {SubgradeComponentType::CurbStrip, 0.25},
             {SubgradeComponentType::TravelLane, 3.5},
             {SubgradeComponentType::TravelLane, 3.5},
             {SubgradeComponentType::BikeLane, 2.5},
@@ -604,9 +655,31 @@ void subgradeTemplateDefaultsBuildUrbanRoadClassProfiles()
         subgradeComponentsForSide(branch, SubgradeSide::Left),
         {
             {SubgradeComponentType::TravelLane, 3.25},
-            {SubgradeComponentType::CurbStrip, 0.25},
             {SubgradeComponentType::Sidewalk, 2.0},
         });
+}
+
+void subgradeTemplateDefaultColorAndSlopeRulesCoverManualCurbStrip()
+{
+    using namespace roadproto::domain::cross_section;
+
+    const auto leftCurbStripColor = SubgradeTemplateDefaults::defaultColorFor(
+        SubgradeSide::Left,
+        SubgradeComponentType::CurbStrip);
+    const auto rightCurbStripColor = SubgradeTemplateDefaults::defaultColorFor(
+        SubgradeSide::Right,
+        SubgradeComponentType::CurbStrip);
+
+    CHECK(leftCurbStripColor.r == 204);
+    CHECK(leftCurbStripColor.g == 178);
+    CHECK(leftCurbStripColor.b == 102);
+    CHECK(rightCurbStripColor.r == 223);
+    CHECK(rightCurbStripColor.g == 255);
+    CHECK(rightCurbStripColor.b == 127);
+    CHECK(std::fabs(SubgradeTemplateDefaults::defaultSlopeFor(SubgradeSide::Left, SubgradeComponentType::CurbStrip) - 0.02) < 1.0e-9);
+    CHECK(std::fabs(SubgradeTemplateDefaults::defaultSlopeFor(SubgradeSide::Right, SubgradeComponentType::CurbStrip) + 0.02) < 1.0e-9);
+    CHECK(std::fabs(SubgradeTemplateDefaults::defaultSlopeFor(SubgradeSide::Left, SubgradeComponentType::BikeLane)) < 1.0e-9);
+    CHECK(std::fabs(SubgradeTemplateDefaults::defaultSlopeFor(SubgradeSide::Right, SubgradeComponentType::Sidewalk)) < 1.0e-9);
 }
 
 void subgradeTemplateComponentDisplayNamesAreChinese()
@@ -674,6 +747,39 @@ void subgradeTemplateNormalizeUnlinksEmptyPavementTemplateHandle()
     CHECK(data.components[0].pavementLayerHandle.empty());
     CHECK(data.components[0].pavementLayerName.empty());
     CHECK(std::fabs(data.components[0].pavementLayerThickness) < 1.0e-9);
+}
+
+void subgradeTemplateNormalizeHandlesInnerAndOuterCurbs()
+{
+    using namespace roadproto::domain::cross_section;
+
+    SubgradeTemplateData data;
+    data.components.push_back(SubgradeTemplateComponent{});
+    auto& component = data.components[0];
+    component.width = 3.75;
+    component.hasInnerCurb = true;
+    component.innerCurbWidth = 0.2;
+    component.innerCurbHeight = 0.18;
+    component.innerCurbEmbedDepth = 0.12;
+    component.hasOuterCurb = false;
+    component.outerCurbWidth = 0.3;
+    component.outerCurbHeight = 0.2;
+    component.outerCurbEmbedDepth = 0.1;
+
+    std::wstring errorMessage;
+    CHECK(SubgradeTemplateRules::normalize(data, errorMessage));
+    CHECK(data.components[0].hasInnerCurb);
+    CHECK(std::fabs(data.components[0].innerCurbWidth - 0.2) < 1.0e-9);
+    CHECK(std::fabs(data.components[0].innerCurbHeight - 0.18) < 1.0e-9);
+    CHECK(std::fabs(data.components[0].innerCurbEmbedDepth - 0.12) < 1.0e-9);
+    CHECK(!data.components[0].hasOuterCurb);
+    CHECK(std::fabs(data.components[0].outerCurbWidth) < 1.0e-9);
+    CHECK(std::fabs(data.components[0].outerCurbHeight) < 1.0e-9);
+    CHECK(std::fabs(data.components[0].outerCurbEmbedDepth) < 1.0e-9);
+
+    data.components[0].hasOuterCurb = true;
+    data.components[0].outerCurbWidth = -0.1;
+    CHECK(!SubgradeTemplateRules::normalize(data, errorMessage));
 }
 
 void subgradeTemplateVariableSlopeUsesOnlySlopeTable()
@@ -2700,6 +2806,144 @@ void roadModelBuilderCreatesThreeDimensionalComponentLines()
     }
 }
 
+void roadModelBuilderAppliesSubgradeSlopeDirectionByRotationSign()
+{
+    using namespace roadproto::domain::alignment;
+    using namespace roadproto::domain::cross_section;
+    using namespace roadproto::domain::profile;
+
+    SubgradeTemplateComponent leftLane;
+    leftLane.side = SubgradeSide::Left;
+    leftLane.type = SubgradeComponentType::TravelLane;
+    leftLane.width = 3.5;
+    leftLane.fixedSlope = 0.02;
+    leftLane.color = {1, 2, 3};
+
+    SubgradeTemplateComponent rightLane = leftLane;
+    rightLane.side = SubgradeSide::Right;
+    rightLane.fixedSlope = -0.02;
+    rightLane.color = {4, 5, 6};
+
+    SubgradeTemplateData templateData;
+    templateData.components.push_back(leftLane);
+    templateData.components.push_back(rightLane);
+
+    RoadModelBuildInput input;
+    input.config.sampleInterval = 10.0;
+    input.config.assignments.push_back({0.0, 20.0, L"T1", L"Template 1"});
+    input.verticalCurve.controlPoints = {
+        {VerticalCurvePointRole::Start, 0.0, 100.0},
+        {VerticalCurvePointRole::End, 20.0, 100.0},
+    };
+    input.alignmentSamples = {
+        {{0.0, 0.0}, 0.0},
+        {{20.0, 0.0}, 20.0},
+    };
+    input.templates = {
+        {L"T1", templateData},
+    };
+
+    const auto result = RoadModelBuilder::build(input);
+
+    CHECK(result.succeeded);
+    const auto leftOuter = std::find_if(
+        result.data.componentLines.begin(),
+        result.data.componentLines.end(),
+        [](const RoadModelComponentLine& line) {
+            return line.key.side == SubgradeSide::Left &&
+                line.key.componentIndex == 0 &&
+                line.key.boundaryIndex == 1;
+        });
+    const auto rightOuter = std::find_if(
+        result.data.componentLines.begin(),
+        result.data.componentLines.end(),
+        [](const RoadModelComponentLine& line) {
+            return line.key.side == SubgradeSide::Right &&
+                line.key.componentIndex == 0 &&
+                line.key.boundaryIndex == 1;
+        });
+    CHECK(leftOuter != result.data.componentLines.end());
+    CHECK(rightOuter != result.data.componentLines.end());
+    if (leftOuter != result.data.componentLines.end() && !leftOuter->points.empty()) {
+        CHECK(std::fabs(leftOuter->points.front().z - 99.93) < 1.0e-9);
+    }
+    if (rightOuter != result.data.componentLines.end() && !rightOuter->points.empty()) {
+        CHECK(std::fabs(rightOuter->points.front().z - 99.93) < 1.0e-9);
+    }
+}
+
+void roadModelBuilderUsesCurbHeightAsComponentStep()
+{
+    using namespace roadproto::domain::alignment;
+    using namespace roadproto::domain::cross_section;
+    using namespace roadproto::domain::profile;
+
+    SubgradeTemplateComponent lane;
+    lane.side = SubgradeSide::Right;
+    lane.type = SubgradeComponentType::TravelLane;
+    lane.width = 3.5;
+    lane.fixedSlope = 0.0;
+    lane.color = {1, 2, 3};
+    lane.hasInnerCurb = true;
+    lane.innerCurbWidth = 0.25;
+    lane.innerCurbHeight = 0.4;
+    lane.innerCurbEmbedDepth = 0.12;
+    lane.hasOuterCurb = true;
+    lane.outerCurbWidth = 0.2;
+    lane.outerCurbHeight = 1.0;
+    lane.outerCurbEmbedDepth = 0.1;
+
+    SubgradeTemplateComponent shoulder;
+    shoulder.side = SubgradeSide::Right;
+    shoulder.type = SubgradeComponentType::HardShoulder;
+    shoulder.width = 1.0;
+    shoulder.fixedSlope = 0.0;
+    shoulder.color = {4, 5, 6};
+
+    SubgradeTemplateData templateData;
+    templateData.components.push_back(lane);
+    templateData.components.push_back(shoulder);
+
+    RoadModelBuildInput input;
+    input.config.sampleInterval = 10.0;
+    input.config.assignments.push_back({0.0, 20.0, L"T1", L"Template 1"});
+    input.verticalCurve.controlPoints = {
+        {VerticalCurvePointRole::Start, 0.0, 100.0},
+        {VerticalCurvePointRole::End, 20.0, 100.0},
+    };
+    input.alignmentSamples = {
+        {{0.0, 0.0}, 0.0},
+        {{20.0, 0.0}, 20.0},
+    };
+    input.templates = {
+        {L"T1", templateData},
+    };
+
+    const auto result = RoadModelBuilder::build(input);
+
+    CHECK(result.succeeded);
+    const auto laneInner = std::find_if(
+        result.data.componentLines.begin(),
+        result.data.componentLines.end(),
+        [](const RoadModelComponentLine& line) {
+            return line.key.componentIndex == 0 && line.key.boundaryIndex == 0;
+        });
+    const auto shoulderInner = std::find_if(
+        result.data.componentLines.begin(),
+        result.data.componentLines.end(),
+        [](const RoadModelComponentLine& line) {
+            return line.key.componentIndex == 1 && line.key.boundaryIndex == 0;
+        });
+    CHECK(laneInner != result.data.componentLines.end());
+    CHECK(shoulderInner != result.data.componentLines.end());
+    if (laneInner != result.data.componentLines.end() && !laneInner->points.empty()) {
+        CHECK(std::fabs(laneInner->points.front().z - 100.4) < 1.0e-9);
+    }
+    if (shoulderInner != result.data.componentLines.end() && !shoulderInner->points.empty()) {
+        CHECK(std::fabs(shoulderInner->points.front().z - 99.4) < 1.0e-9);
+    }
+}
+
 void roadModelBuilderAppliesSubgradeHeightAtComponentInnerEdge()
 {
     using namespace roadproto::domain::alignment;
@@ -2717,9 +2961,12 @@ void roadModelBuilderAppliesSubgradeHeightAtComponentInnerEdge()
     shoulder.side = SubgradeSide::Right;
     shoulder.type = SubgradeComponentType::HardShoulder;
     shoulder.width = 1.0;
-    shoulder.height = 0.4;
     shoulder.fixedSlope = 0.0;
     shoulder.color = {4, 5, 6};
+    shoulder.hasInnerCurb = true;
+    shoulder.innerCurbWidth = 0.2;
+    shoulder.innerCurbHeight = 0.4;
+    shoulder.innerCurbEmbedDepth = 0.1;
     shoulder.pavementLayerLinked = true;
     shoulder.pavementLayerHandle = L"PV-STEP";
     shoulder.pavementLayerName = L"硬路肩结构层";
@@ -3413,6 +3660,71 @@ void roadModelSectionPreviewBuilderCreatesSubgradePreviewAtStation()
         CHECK(std::fabs(subgrade->points[0].elevation - 101.0) < 1e-9);
         CHECK(std::fabs(subgrade->points[1].offset + 3.5) < 1e-9);
         CHECK(std::fabs(subgrade->points[1].elevation - 100.93) < 1e-7);
+    }
+}
+
+void roadModelSectionPreviewBuilderKeepsSubgradeWidthWhenCurbsOverlapInside()
+{
+    using namespace roadproto::domain::alignment;
+    using namespace roadproto::domain::cross_section;
+    using namespace roadproto::domain::profile;
+
+    SubgradeTemplateComponent lane;
+    lane.side = SubgradeSide::Right;
+    lane.type = SubgradeComponentType::TravelLane;
+    lane.width = 3.5;
+    lane.fixedSlope = -0.02;
+    lane.color = {1, 2, 3};
+    lane.hasInnerCurb = true;
+    lane.innerCurbWidth = 0.25;
+    lane.innerCurbHeight = 0.18;
+    lane.innerCurbEmbedDepth = 0.12;
+    lane.hasOuterCurb = true;
+    lane.outerCurbWidth = 0.2;
+    lane.outerCurbHeight = 0.15;
+    lane.outerCurbEmbedDepth = 0.1;
+
+    SubgradeTemplateData templateData;
+    templateData.components.push_back(lane);
+
+    RoadModelBuildInput input;
+    input.config.sampleInterval = 10.0;
+    input.config.assignments.push_back({0.0, 20.0, L"T1", L"Template 1"});
+    input.verticalCurve.controlPoints = {
+        {VerticalCurvePointRole::Start, 0.0, 100.0},
+        {VerticalCurvePointRole::End, 20.0, 102.0},
+    };
+    input.alignmentSamples = {
+        {{0.0, 0.0}, 0.0},
+        {{20.0, 0.0}, 20.0},
+    };
+    input.templates = {
+        {L"T1", templateData},
+    };
+
+    const auto result = RoadModelBuilder::build(input);
+    CHECK(result.succeeded);
+
+    RoadModelSectionPreviewRequest request;
+    request.data = result.data;
+    request.alignmentSamples = input.alignmentSamples;
+    request.station = 10.0;
+
+    const auto preview = RoadModelSectionPreviewBuilder::build(request);
+
+    CHECK(preview.succeeded);
+    const auto subgrade = std::find_if(
+        preview.segments.begin(),
+        preview.segments.end(),
+        [](const RoadModelSectionPreviewSegment& segment) {
+            return segment.kind == RoadModelSectionPreviewSegmentKind::Subgrade &&
+                segment.points.size() == 2;
+        });
+    CHECK(subgrade != preview.segments.end());
+    if (subgrade != preview.segments.end()) {
+        CHECK(std::fabs(subgrade->points[1].offset + 3.5) < 1e-9);
+        CHECK(std::fabs(subgrade->points[0].elevation - 101.18) < 1e-7);
+        CHECK(std::fabs(subgrade->points[1].elevation - 101.11) < 1e-7);
     }
 }
 
@@ -6147,7 +6459,7 @@ void subgradeTemplateCommandSourceContainsPavementTemplatePickFlow()
         || source.find("DnPavementLayerTemplateEntity::desc()") != std::string::npos);
 }
 
-void subgradeTemplateEntityPersistenceSourceContainsPavementTemplateName()
+void subgradeTemplateEntityPersistenceSourceContainsPavementTemplateNameAndCurbs()
 {
     const auto sourcePath = findRepositoryRootForTests()
         / "src"
@@ -6158,8 +6470,24 @@ void subgradeTemplateEntityPersistenceSourceContainsPavementTemplateName()
     CHECK(std::filesystem::exists(sourcePath));
 
     const auto source = readTextFileForTests(sourcePath);
-    CHECK(source.find("constexpr Adesk::Int16 kEntityVersion = 2") != std::string::npos);
+    CHECK(source.find("constexpr Adesk::Int16 kEntityVersion = 3") != std::string::npos);
     CHECK(source.find("component.pavementLayerName = version >= 2") != std::string::npos);
+    CHECK(source.find("component.hasInnerCurb = readBool(filer)") != std::string::npos);
+    CHECK(source.find("filer->readDouble(&component.innerCurbWidth)") != std::string::npos);
+    CHECK(source.find("filer->readDouble(&component.innerCurbHeight)") != std::string::npos);
+    CHECK(source.find("filer->readDouble(&component.innerCurbEmbedDepth)") != std::string::npos);
+    CHECK(source.find("component.hasOuterCurb = readBool(filer)") != std::string::npos);
+    CHECK(source.find("filer->readDouble(&component.outerCurbWidth)") != std::string::npos);
+    CHECK(source.find("filer->readDouble(&component.outerCurbHeight)") != std::string::npos);
+    CHECK(source.find("filer->readDouble(&component.outerCurbEmbedDepth)") != std::string::npos);
+    CHECK(source.find("void drawCurb(") != std::string::npos);
+    CHECK(source.find("curbTopStartY = edgeSurfaceY") != std::string::npos);
+    CHECK(source.find("worldDraw->geometry().polygon(4, polygon)") != std::string::npos);
+    CHECK(source.find("worldDraw->subEntityTraits().setTrueColor(entityColor(color))") != std::string::npos);
+    CHECK(source.find("worldDraw->subEntityTraits().setTrueColor(entityColor(SubgradeTemplateRgbColor{255, 255, 255}))") != std::string::npos);
+    CHECK(source.find("void drawVerticalText(") != std::string::npos);
+    CHECK(source.find("textDirection(yAxis)") != std::string::npos);
+    CHECK(source.find("drawVerticalText(worldDraw, origin, xAxis, yAxis, labelX, labelY, componentLabel(component)") != std::string::npos);
     CHECK(source.find("writeWideString(filer, component.pavementLayerName)") != std::string::npos);
 }
 
@@ -6434,6 +6762,14 @@ void subgradeTemplateWindowSourceKeepsControlsReadable()
     CHECK(source.find("UpdateSlopeModeInputState") != std::string::npos);
     CHECK(source.find("WidthText") != std::string::npos);
     CHECK(source.find("SlopeText") != std::string::npos);
+    CHECK(xaml.find("高度差") == std::string::npos);
+    CHECK(xaml.find("x:Name=\"HeightBox\"") == std::string::npos);
+    CHECK(source.find("component.Height = ReadDouble(HeightBox.Text, component.Height)") == std::string::npos);
+    CHECK(source.find("topEndY = topStartY + DisplaySlope(component) * w * sign") != std::string::npos);
+    CHECK(source.find("curbTopStartY = edgeSurfaceY") != std::string::npos);
+    CHECK(source.find("Fill = BrushFor(component)") != std::string::npos);
+    CHECK(source.find("CurbStrokeBrush = Brushes.White") != std::string::npos);
+    CHECK(source.find("ApplyDefaultCurbParameters(component);") != std::string::npos);
     CHECK(source.find("SubgradeRoadGrade.FirstClass") != std::string::npos);
     CHECK(source.find("SubgradeRoadGrade.UrbanArterial") != std::string::npos);
     CHECK(source.find("SubgradeRoadGrade.UrbanBranch") != std::string::npos);
@@ -8239,12 +8575,13 @@ void agentToolRequestParsesSubgradeComponentDetailFields()
         "\"side\":\"Left\","
         "\"type\":\"HardShoulder\","
         "\"width\":2.5,"
-        "\"height\":0.1,"
         "\"slopeMode\":\"VariableByStation\","
         "\"fixedSlope\":0.02,"
         "\"color\":{\"r\":12,\"g\":34,\"b\":56},"
         "\"wideningTable\":[{\"station\":100,\"value\":0.5}],"
         "\"variableSlopeTable\":[{\"station\":100,\"value\":0.03}],"
+        "\"innerCurb\":{\"enabled\":true,\"width\":0.2,\"height\":0.18,\"embedDepth\":0.12},"
+        "\"outerCurb\":{\"enabled\":true,\"width\":0.25,\"height\":0.2,\"embedDepth\":0.1},"
         "\"pavementLayer\":{\"linked\":true,\"handle\":\"PV-42\",\"name\":\"主线路面\",\"thickness\":0.28}"
         "}]"
         "}"
@@ -8266,6 +8603,14 @@ void agentToolRequestParsesSubgradeComponentDetailFields()
     CHECK(std::fabs(component.wideningTable.front().value - 0.5) < 1.0e-9);
     CHECK(component.variableSlopeTable.size() == 1);
     CHECK(std::fabs(component.variableSlopeTable.front().value - 0.03) < 1.0e-9);
+    CHECK(component.innerCurb.enabled);
+    CHECK(std::fabs(component.innerCurb.width - 0.2) < 1.0e-9);
+    CHECK(std::fabs(component.innerCurb.height - 0.18) < 1.0e-9);
+    CHECK(std::fabs(component.innerCurb.embedDepth - 0.12) < 1.0e-9);
+    CHECK(component.outerCurb.enabled);
+    CHECK(std::fabs(component.outerCurb.width - 0.25) < 1.0e-9);
+    CHECK(std::fabs(component.outerCurb.height - 0.2) < 1.0e-9);
+    CHECK(std::fabs(component.outerCurb.embedDepth - 0.1) < 1.0e-9);
     CHECK(component.pavementLayer.linked);
     CHECK(component.pavementLayer.handle == L"PV-42");
     CHECK(component.pavementLayer.name == L"主线路面");
@@ -8387,12 +8732,19 @@ void agentSubgradeToolMapsExplicitComponents()
     component.type = L"HardShoulder";
     component.width = 2.5;
     component.hasWidth = true;
-    component.height = 0.1;
     component.slopeMode = L"VariableByStation";
     component.fixedSlope = 0.02;
     component.color = {12, 34, 56};
     component.wideningTable.push_back(AgentToolStationValue{100.0, 0.5});
     component.variableSlopeTable.push_back(AgentToolStationValue{100.0, 0.03});
+    component.innerCurb.enabled = true;
+    component.innerCurb.width = 0.2;
+    component.innerCurb.height = 0.18;
+    component.innerCurb.embedDepth = 0.12;
+    component.outerCurb.enabled = true;
+    component.outerCurb.width = 0.25;
+    component.outerCurb.height = 0.2;
+    component.outerCurb.embedDepth = 0.1;
     component.pavementLayer.linked = true;
     component.pavementLayer.handle = L"PV-42";
     component.pavementLayer.name = L"主线路面";
@@ -8409,7 +8761,7 @@ void agentSubgradeToolMapsExplicitComponents()
     CHECK(mapped.side == SubgradeSide::Left);
     CHECK(mapped.type == SubgradeComponentType::HardShoulder);
     CHECK(std::fabs(mapped.width - 2.5) < 1.0e-9);
-    CHECK(std::fabs(mapped.height - 0.1) < 1.0e-9);
+    CHECK(std::fabs(mapped.height) < 1.0e-9);
     CHECK(mapped.slopeMode == SubgradeSlopeMode::VariableByStation);
     CHECK(std::fabs(mapped.fixedSlope) < 1.0e-9);
     CHECK(mapped.color.r == 12);
@@ -8420,6 +8772,14 @@ void agentSubgradeToolMapsExplicitComponents()
     CHECK(std::fabs(mapped.wideningTable.front().value - 0.5) < 1.0e-9);
     CHECK(mapped.variableSlopeTable.size() == 1);
     CHECK(std::fabs(mapped.variableSlopeTable.front().value - 0.03) < 1.0e-9);
+    CHECK(mapped.hasInnerCurb);
+    CHECK(std::fabs(mapped.innerCurbWidth - 0.2) < 1.0e-9);
+    CHECK(std::fabs(mapped.innerCurbHeight - 0.18) < 1.0e-9);
+    CHECK(std::fabs(mapped.innerCurbEmbedDepth - 0.12) < 1.0e-9);
+    CHECK(mapped.hasOuterCurb);
+    CHECK(std::fabs(mapped.outerCurbWidth - 0.25) < 1.0e-9);
+    CHECK(std::fabs(mapped.outerCurbHeight - 0.2) < 1.0e-9);
+    CHECK(std::fabs(mapped.outerCurbEmbedDepth - 0.1) < 1.0e-9);
     CHECK(mapped.pavementLayerLinked);
     CHECK(mapped.pavementLayerHandle == L"PV-42");
     CHECK(mapped.pavementLayerName == L"主线路面");
@@ -8903,13 +9263,16 @@ int main()
     startupRegistrationIncludesProfileModule();
     agentModuleRegistersToolGatewayCommand();
     subgradeTemplateDefaultsBuildExpressway();
+    subgradeTemplateDefaultsGiveMedianOuterCurbs();
     subgradeTemplateDefaultsBuildUrbanExpressway();
     subgradeTemplateDefaultsBuildHighwayGradesFromRoadClassProfiles();
     subgradeTemplateDefaultsBuildUrbanRoadClassProfiles();
+    subgradeTemplateDefaultColorAndSlopeRulesCoverManualCurbStrip();
     subgradeTemplateComponentDisplayNamesAreChinese();
     subgradeTemplateRulesUseWideningTableAndPavementThicknessGate();
     subgradeTemplateNormalizePreservesLinkedPavementTemplateReference();
     subgradeTemplateNormalizeUnlinksEmptyPavementTemplateHandle();
+    subgradeTemplateNormalizeHandlesInnerAndOuterCurbs();
     subgradeTemplateVariableSlopeUsesOnlySlopeTable();
     sectionDrawingConfigRowsResolveByStationAndPriority();
     sectionDrawingConfigRowsResolvePriorityPerComponent();
@@ -8960,6 +9323,8 @@ int main()
     roadModelStationSamplerOnlyKeepsTemplateCoveredStations();
     roadModelStationSamplerSnapsTemplateBoundaryTolerance();
     roadModelBuilderCreatesThreeDimensionalComponentLines();
+    roadModelBuilderAppliesSubgradeSlopeDirectionByRotationSign();
+    roadModelBuilderUsesCurbHeightAsComponentStep();
     roadModelBuilderAppliesSubgradeHeightAtComponentInnerEdge();
     roadModelBuilderCreatesPavementLayerWireLinesForBoundSubgradeComponent();
     roadModelBuilderKeepsPavementLayerInnerOuterSemanticOnLeftSide();
@@ -8971,6 +9336,7 @@ int main()
     roadModelSectionPreviewBuilderDrawsPavementLayerRectangleAtSampledStation();
     roadModelSectionPreviewBuilderInterpolatesPavementLayerRectangleBetweenSamples();
     roadModelSectionPreviewBuilderCreatesSubgradePreviewAtStation();
+    roadModelSectionPreviewBuilderKeepsSubgradeWidthWhenCurbsOverlapInside();
     roadModelSectionPreviewBuilderAddsGroundLineFromTin();
     roadModelBuilderStoresGroundProfileSnapshotsForSections();
     roadModelSectionPreviewBuilderUsesStoredGroundSnapshotWithoutTin();
@@ -9016,7 +9382,7 @@ int main()
     subgradeTemplateEntitySourceContainsMoveGrip();
     subgradeTemplateDialogBridgeSourceContainsPavementTemplatePickContracts();
     subgradeTemplateCommandSourceContainsPavementTemplatePickFlow();
-    subgradeTemplateEntityPersistenceSourceContainsPavementTemplateName();
+    subgradeTemplateEntityPersistenceSourceContainsPavementTemplateNameAndCurbs();
     subgradeTemplateWindowSourceKeepsControlsReadable();
     subgradeTemplateBridgeWritesEnumCodesAsText();
     managedRibbonExtensionRegistersVerticalCurveContextMenu();

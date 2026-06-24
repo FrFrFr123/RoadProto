@@ -61,6 +61,7 @@ bool isSubgradeComponentOperationPositionCode(const std::wstring& code)
 
 SubgradeTemplateRgbColor mapColorOrDefault(
     const AgentToolColor& color,
+    SubgradeSide side,
     SubgradeComponentType type)
 {
     if (color.r >= 0 && color.g >= 0 && color.b >= 0) {
@@ -69,7 +70,7 @@ SubgradeTemplateRgbColor mapColorOrDefault(
             std::clamp(color.g, 0, 255),
             std::clamp(color.b, 0, 255)};
     }
-    return SubgradeTemplateDefaults::defaultColorFor(type);
+    return SubgradeTemplateDefaults::defaultColorFor(side, type);
 }
 
 bool mapComponent(
@@ -109,10 +110,18 @@ bool mapComponent(
     component.side = subgradeSideFromCode(input.side, SubgradeSide::Right);
     component.type = subgradeComponentTypeFromCode(input.type, SubgradeComponentType::TravelLane);
     component.width = input.width;
-    component.height = input.height;
+    component.height = 0.0;
     component.slopeMode = subgradeSlopeModeFromCode(input.slopeMode, SubgradeSlopeMode::Fixed);
     component.fixedSlope = input.fixedSlope;
-    component.color = mapColorOrDefault(input.color, component.type);
+    component.color = mapColorOrDefault(input.color, component.side, component.type);
+    component.hasInnerCurb = input.innerCurb.enabled;
+    component.innerCurbWidth = input.innerCurb.width;
+    component.innerCurbHeight = input.innerCurb.height;
+    component.innerCurbEmbedDepth = input.innerCurb.embedDepth;
+    component.hasOuterCurb = input.outerCurb.enabled;
+    component.outerCurbWidth = input.outerCurb.width;
+    component.outerCurbHeight = input.outerCurb.height;
+    component.outerCurbEmbedDepth = input.outerCurb.embedDepth;
 
     for (const auto& row : input.wideningTable) {
         component.wideningTable.push_back({row.station, row.value});
@@ -175,7 +184,8 @@ bool applyAddComponentOperation(
     component.side = side;
     component.type = type;
     component.width = width;
-    component.color = SubgradeTemplateDefaults::defaultColorFor(type);
+    component.fixedSlope = SubgradeTemplateDefaults::defaultSlopeFor(side, type);
+    component.color = SubgradeTemplateDefaults::defaultColorFor(side, type);
     data.components.insert(insertPosition, component);
     return true;
 }

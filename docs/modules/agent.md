@@ -42,7 +42,7 @@ Agent 相关代码和文档的主结构契约见 `docs/architecture/agent_code_s
 - Agent 总览：`docs/agent/overview.md`
 - 工具协议：`docs/agent/tool_protocol.md`
 - Skill 写作规则：`docs/agent/skill_authoring_rules.md`
-- 路基模板创建 skill：`docs/agent/skills/cross_section/subgrade_template_create.md`
+- 路基模板创建 skill：`docs/agent/skills/cross_section/subgrade_template_create.md`，显式部件 schema 支持内侧/外侧路缘石参数。
 - 工具网关复用说明：`docs/reuse/agent_tool_gateway.md`
 
 ## 边界
