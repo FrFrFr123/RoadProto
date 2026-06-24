@@ -1,6 +1,6 @@
 # 平面布线与道路中线实体 Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For implementation workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** 新增 `ALIGNMENT` 平面设计模块，支持平面布线、道路中线自定义实体、桩号标注、属性/平曲线参数编辑、Ribbon 入口和第一版夹点刷新。
 

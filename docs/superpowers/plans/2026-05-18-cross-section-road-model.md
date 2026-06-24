@@ -1,6 +1,6 @@
 # Cross-Section Road Model Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For implementation workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Build the `RD_SECTION_ROAD_MODEL_CREATE` / `RD_SECTION_ROAD_MODEL_EDIT` cross-section road model workflow that assigns existing subgrade templates by priority ranges and creates an editable 3D road model entity.
 

@@ -4,7 +4,7 @@ RoadProto 是一个面向 ObjectARX/C++ 的道路设计原型功能框架，用�
 
 AI 或 Codex 进入项目时，应先阅读根目录 `AGENTS.md`。`README.md` 负责说明项目，`AGENTS.md` 负责规定每次开发前必须读取哪些规则文档。
 
-核心架构原则见 `AGENTS.md` 和 `docs/architecture/overview.md`：RoadProto 采用“C++ ObjectARX 核心 + 可替换 UI 层”。C++ ObjectARX 负责 CAD 核心能力、几何算法、自定义实体和 DWG 持久化；WPF 只负责界面展示与用户交互，并通过 Bridge / Adapter 调用核心能力。地形 TIN 当前代码结构见 `docs/architecture/terrain_tin_code_structure.md`；设计软件原型 Agent 的后端、WPF 面板、工具网关、skill 和运行期目录约定见 `docs/architecture/agent_code_structure.md`。
+核心架构原则见 `AGENTS.md` 和 `docs/architecture/overview.md`：RoadProto 采用“C++ ObjectARX 核心 + 可替换 UI 层”。C++ ObjectARX 负责 CAD 核心能力、几何算法、自定义实体和 DWG 持久化；WPF 只负责界面展示与用户交互，并通过 Bridge / Adapter 调用核心能力。地形 TIN 当前代码结构见 `docs/architecture/terrain_tin_code_structure.md`。
 
 ## 目标环境
 
@@ -15,23 +15,21 @@ AI 或 Codex 进入项目时，应先阅读根目录 `AGENTS.md`。`README.md` �
 - 命令行构建优先使用 VS2026 MSBuild：`D:\Program Files\Microsoft Visual Studio\18\Insiders\MSBuild\Current\Bin\amd64\MSBuild.exe`
 - 仍需保持 AutoCAD 2021 / ObjectARX 2021 兼容；项目平台工具集按当前工程配置执行，不随意升级 CAD 版本
 - .NET Framework 4.8，用于 AutoCAD 可见 Ribbon 托管插件
-- .NET 8，用于本地 RoadProto Agent sidecar 服务
 - 运行形式：ARX 插件
 
 ## 当前版本
 
-- 版本：`v0.1.31`
-- 构建日期：`20260527`
-- 阶段：`SectionDrawingConfig`
-- ARX 文件名：`RoadProto_v0.1.31_20260527_SectionDrawingConfig.arx`
+- 版本：`v0.1.34`
+- 构建日期：`20260624`
+- 阶段：`PrototypeCleanup`
+- ARX 文件名：`RoadProto_v0.1.34_<构建时间戳>_PrototypeCleanup.arx`
+- 命名规则：每次编译都会生成带 `yyyyMMdd_HHmmssfff` 时间戳的新 ARX 文件名，不覆盖 Release/Debug 目录下已有 ARX。
 - 托管 Ribbon 插件：`RoadProto.Terrain.UI.dll`
 - 输出目录：
   - `artifacts/x64/Debug/`
   - `artifacts/x64/Release/`
   - `artifacts/managed/Debug/net48/`
   - `artifacts/managed/Release/net48/`
-  - `artifacts/agent/Debug/net8.0/`
-  - `artifacts/agent/Release/net8.0/`
 
 ## 分层说明
 
@@ -42,8 +40,7 @@ AI 或 Codex 进入项目时，应先阅读根目录 `AGENTS.md`。`README.md` �
 - `src/application`：具体功能流程和 use case。
 - `src/modules`：业务模块，负责注册命令和 Ribbon 分组。
 - `src/ui`：Ribbon 模型、对话框、资源和 AutoCAD 托管 Ribbon 插件。
-- `src/agent`：设计软件原型 Agent 的 `.NET 8` 本地 sidecar、管理控制台、模型 Provider、skill/知识库读取和后端测试。
-- `docs`：架构说明、业务文档、Agent 文档、复用说明、版本记录、开发规则。
+- `docs`：架构说明、业务文档、复用说明、版本记录、开发规则。
 
 核心原则：
 
@@ -177,18 +174,6 @@ UI   -> 只负责参数收集和展示
   - 结构图示宽度固定 `20cm`，厚度按厘米 `1:1` 绘制；结构图示内部不写结构层类型文字，底部图例按结构层出现顺序逐项绘制，不合并同填充类型或同层名。
   - 命令只绘制普通 CAD 图元，不生成自定义实体。
   - 业务文档：`docs/business/drawing_quantity/路面结构图例.md`
-- 设计软件原型 Agent：命令 `RD_AI_ASSISTANT_OPEN`
-  - 可通过 AutoCAD 右侧 WPF Agent 面板进行问答、操作咨询和受控工具调用确认。
-  - 本地 `.NET 8` Agent sidecar 固定监听 `http://127.0.0.1:17831`，提供 `/health`、`/api/chat` 和独立浏览器管理控制台 `/admin`。
-  - 点击 Ribbon 的 `Agent / AI 助手` 或运行 `RD_AI_ASSISTANT_OPEN` 时，WPF 面板会自动启动本地 Agent sidecar；若端口上已有可用后端则直接复用，不取得关闭所有权。
-  - 关闭 Agent 面板时会自动关闭本次由面板启动的后端进程；手动启动或其他进程已经占用端口的后端不会被 WPF 强制关闭。
-  - Agent 输入框启用 WPF Palette 保持焦点和 IME 输入保护，避免中文输入组合键落入 AutoCAD 命令行。
-  - 管理控制台支持模型 Profile 配置、连接测试、Windows 当前用户加密保存 API Key、Markdown skill 上传和 Markdown 知识库上传。
-  - 模型 Provider 使用 OpenAI-compatible `/chat/completions`，配置支持 OpenAI、DeepSeek 和 DashScope/阿里百炼/千问等兼容接口；`appsettings` 中的 profile 仍可作为首次启动 seed。
-  - 首个自动化工具为 `cross_section.subgrade_template.create`，通过 `RD_AI_EXECUTE_TOOL_FILE` 在 C++ 白名单工具网关中创建 `DnSubgradeTemplateEntity` 路基模板实体。
-  - Agent 相关代码和文档落点必须遵守 `docs/architecture/agent_code_structure.md`，不要把模型、WPF、C++ 工具网关和运行期配置混放。
-  - 当前已通过自动化构建与测试；AutoCAD 2021 图形界面的完整端到端点验仍待手工执行，因此暂不标记为稳定版本。
-  - 业务文档：`docs/business/agent/设计软件原型Agent.md`
 - 平交口模块：命令 `RD_INTERSECTION_INFO`
   - 示例演示新增模块可以通过框架完成注册、命令暴露和 Ribbon 元数据挂接。
   - 业务文档：`docs/business/intersection/平交口模块框架说明.md`
@@ -228,29 +213,14 @@ ARX 项目的输出命名规则来自 `build/RoadProto.Build.props`。
 dotnet build src\ui\wpf\RoadProto.Terrain.UI\RoadProto.Terrain.UI.csproj -c Release
 ```
 
-本地 Agent sidecar 使用 .NET 8：
-
-```powershell
-dotnet build src\agent\RoadProto.Agent.Host\RoadProto.Agent.Host.csproj -c Release
-dotnet run --project src\agent\RoadProto.Agent.Host\RoadProto.Agent.Host.csproj
-```
-
-后端默认监听 `http://127.0.0.1:17831`。在 AutoCAD 中打开 Agent 面板会自动启动后端；如需单独配置或调试，也可以手动启动后端后打开本地管理控制台：
-
-```text
-http://127.0.0.1:17831/admin
-```
-
-管理控制台支持模型 Profile 配置、连接测试、Windows 当前用户加密保存 API Key、Markdown skill 上传和 Markdown 知识库上传。默认本地存储根目录为项目根目录下的 `.roadproto-agent/`，例如 `F:\0_GPT_道路设计原型功能项目\.roadproto-agent\`；API Key 保存在其中的 `secrets/` 子目录，并已通过 `.gitignore` 排除，不会写入仓库。模型配置可参考 `src/agent/RoadProto.Agent.Host/appsettings.example.json`；这些配置会在本地 `config.json` 不存在时作为首次启动 seed。Agent 新增 Provider、工具、skill 或知识库接入时，先查看 `docs/architecture/agent_code_structure.md` 中的代码和文档落点规则。
-
 在 AutoCAD 2021 中手动验证当前 RoadProto 流程：
 
 ```text
-ARXLOAD artifacts\x64\Release\RoadProto_v0.1.31_20260527_SectionDrawingConfig.arx
+ARXLOAD artifacts\x64\Release\RoadProto_v0.1.34_<构建时间戳>_PrototypeCleanup.arx
 NETLOAD artifacts\managed\Release\net48\RoadProto.Terrain.UI.dll
 ```
 
-加载后可在 Ribbon 中打开 `RoadProto` 选项卡，点击 `数模` 面板下的 `地形构网`、`编辑数模`、`导出数模` 或 `导入数模`；也可点击 `平面设计` 面板下的 `平面布线`、`编辑平曲线参数`、`导出中线 ICD` 和 `导入中线 ICD`；纵断面入口位于 `纵断面设计` 面板下的 `纵断面拉坡图` 和 `创建竖曲线`；横断面入口位于 `横断面设计` 面板下的 `创建路基模板`、`创建边坡模板`、`创建路面结构层模板`、`横断面戴帽`、`编辑道路模型`、`查看横断面` 和 `横断面图配置`；出图出表入口位于 `出图出表` 面板下的 `路面工程量统计表` 和 `路面结构图例`；Agent 入口位于 `Agent` 面板下的 `AI 助手`。命令行可直接运行 `DN_TERRAIN_TIN_CREATE`、`DN_TERRAIN_TIN_EDIT`、`DN_TERRAIN_TIN_EXPORT`、`DN_TERRAIN_TIN_IMPORT`、`RD_ALIGN_CENTERLINE_CREATE`、`RD_ALIGN_CURVE_PARAM_EDIT`、`RD_ALIGN_CENTERLINE_EXPORT_ICD`、`RD_ALIGN_CENTERLINE_IMPORT_ICD`、`RD_PROFILE_GRADE_GRAPH_CREATE`、`RD_PROFILE_VERTICAL_CURVE_CREATE`、`RD_PROFILE_VERTICAL_CURVE_ADD_PVI`、`RD_PROFILE_VERTICAL_CURVE_DELETE_PVI`、`RD_SECTION_SUBGRADE_TEMPLATE_CREATE`、`RD_SECTION_SLOPE_TEMPLATE_CREATE`、`RD_SECTION_PAVEMENT_LAYER_TEMPLATE_CREATE`、`RD_SECTION_ROAD_MODEL_CREATE`、`RD_SECTION_ROAD_MODEL_EDIT`、`RD_SECTION_ROAD_MODEL_VIEW_SECTION`、`RD_SECTION_DRAWING_CONFIG`、`RD_DRAWING_PAVEMENT_QUANTITY_TABLE`、`RD_DRAWING_PAVEMENT_STRUCTURE_LEGEND`、`RD_AI_ASSISTANT_OPEN` 和 `RD_AI_EXECUTE_TOOL_FILE`。数模流转文件后缀固定为 `.rmesh`，道路中线流转文件后缀固定为 `.icd`，纵断面地面线文件后缀固定为 `.dmx`，路面结构层模板流转文件后缀固定为 `.rpavement.xml`，横断面图配置流转文件使用 `.csv`，Agent 工具请求和结果文件限制在 `%TEMP%\RoadProtoAgent\`。
+加载后可在 Ribbon 中打开 `RoadProto` 选项卡，点击 `数模` 面板下的 `地形构网`、`编辑数模`、`导出数模` 或 `导入数模`；也可点击 `平面设计` 面板下的 `平面布线`、`编辑平曲线参数`、`导出中线 ICD` 和 `导入中线 ICD`；纵断面入口位于 `纵断面设计` 面板下的 `纵断面拉坡图` 和 `创建竖曲线`；横断面入口位于 `横断面设计` 面板下的 `创建路基模板`、`创建边坡模板`、`创建路面结构层模板`、`横断面戴帽`、`编辑道路模型`、`查看横断面` 和 `横断面图配置`；出图出表入口位于 `出图出表` 面板下的 `路面工程量统计表` 和 `路面结构图例`。命令行可直接运行 `DN_TERRAIN_TIN_CREATE`、`DN_TERRAIN_TIN_EDIT`、`DN_TERRAIN_TIN_EXPORT`、`DN_TERRAIN_TIN_IMPORT`、`RD_ALIGN_CENTERLINE_CREATE`、`RD_ALIGN_CURVE_PARAM_EDIT`、`RD_ALIGN_CENTERLINE_EXPORT_ICD`、`RD_ALIGN_CENTERLINE_IMPORT_ICD`、`RD_PROFILE_GRADE_GRAPH_CREATE`、`RD_PROFILE_VERTICAL_CURVE_CREATE`、`RD_PROFILE_VERTICAL_CURVE_ADD_PVI`、`RD_PROFILE_VERTICAL_CURVE_DELETE_PVI`、`RD_SECTION_SUBGRADE_TEMPLATE_CREATE`、`RD_SECTION_SLOPE_TEMPLATE_CREATE`、`RD_SECTION_PAVEMENT_LAYER_TEMPLATE_CREATE`、`RD_SECTION_ROAD_MODEL_CREATE`、`RD_SECTION_ROAD_MODEL_EDIT`、`RD_SECTION_ROAD_MODEL_VIEW_SECTION`、`RD_SECTION_DRAWING_CONFIG`、`RD_DRAWING_PAVEMENT_QUANTITY_TABLE` 和 `RD_DRAWING_PAVEMENT_STRUCTURE_LEGEND`。数模流转文件后缀固定为 `.rmesh`，道路中线流转文件后缀固定为 `.icd`，纵断面地面线文件后缀固定为 `.dmx`，路面结构层模板流转文件后缀固定为 `.rpavement.xml`，横断面图配置流转文件使用 `.csv`。
 
 ## 本机运行与内存排查
 
@@ -280,7 +250,6 @@ artifacts\x64\Debug\RoadProtoCoreTests.exe
 - 纵断面竖曲线规则：默认创建、对称二次抛物线计算、BVC/EVC、高低点、任意桩号高程和坡度、PVI 增删、半径更新和命令元数据。
 - 横断面道路模型规则：模板优先级解析、采样点收集、竖曲线高程、路基模板三维部件线生成、路面结构层模板内外侧语义和线框生成、边坡模板默认值和几何约束、边坡模板组优先级、构造物范围按左侧/右侧/两侧跳过边坡放坡、TIN 地面剖切交地、断面地面快照、断面节点链、三维网格线框生成、生成进度回调、采样桩号持久化、横断面查看预览、横断面图配置 CSV、同一路基部件配置行优先级、路基类型多选、结构层面域夹点手动编辑、命令元数据、WPF Bridge 和 ObjectARX 实体源码契约。
 - 出图出表规则：路面工程量统计表命令元数据、横断面图实体当前面域优先采样、构造物切段、旧道路模型部件名反推、部件/结构层双模式聚合、结构层平面投影面积、平均断面法体积、依照路面面积方法体积和带格式 `.xls` 写出；路面结构图例命令元数据、模板列规划、表头列宽、结构图示不写层类型文字、厚度厘米表达、底部图例不合并和普通 CAD 图元绘制契约。
-- Agent 原型规则：`AI_AGENT` 模块命令元数据、Agent 工具 JSON 解析、请求大小限制、顶层字段白名单、`resultPath` 专用临时目录限制、路基模板工具参数映射、`componentOperations` 局部部件操作、无效参数拒绝、工具执行结果 JSON 写回，以及 `.NET 8` 后端 `AgentPlanner`、OpenAI-compatible Provider、管理控制台配置读写、DPAPI API Key 保存、Markdown skill/知识库上传、prompt 上下文组装和 WPF Agent 客户端源码契约。
 
 ## 新增命令流程
 

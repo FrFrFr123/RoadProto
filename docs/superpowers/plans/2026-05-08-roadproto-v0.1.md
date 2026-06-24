@@ -1,6 +1,6 @@
 # RoadProto V0.1 实施计划
 
-> **给后续 agentic worker 的说明：** 执行该计划时应使用 `superpowers:subagent-driven-development`（推荐）或 `superpowers:executing-plans`，并按任务清单逐项推进。
+> **给后续开发执行者的说明：** 执行该计划时应使用 `superpowers:subagent-driven-development`（推荐）或 `superpowers:executing-plans`，并按任务清单逐项推进。
 
 **目标：** 建立 V0.1 ObjectARX/C++ 道路设计原型功能框架。
 

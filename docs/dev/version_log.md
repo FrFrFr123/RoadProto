@@ -1,5 +1,32 @@
 # 版本记录
 
+## v0.1.34_20260624_PrototypeCleanup
+
+- 阶段：旧实验原型清理与 Release 产物更新。
+- ARX 文件名规则：`RoadProto_v0.1.34_<构建时间戳>_PrototypeCleanup.arx`。
+- 本次 Release 验证生成：`artifacts/x64/Release/RoadProto_v0.1.34_20260624_120204026_PrototypeCleanup.arx`。
+- 构建时间戳格式：`yyyyMMdd_HHmmssfff`。
+- 修改内容：
+  - 删除旧本地实验链路相关 C++ 模块、工具请求解析、ObjectARX 工具网关、托管 WPF 面板、本地后端进程、后端测试、专属文档、历史计划和运行期目录。
+  - 从 Solution、ARX 项目、核心测试项目、托管 Ribbon、README、架构/开发/编码/模块/复用/测试文档中移除旧入口和坏链接。
+  - 项目版本更新为 `v0.1.34`，阶段更新为 `PrototypeCleanup`，继续保留动态 ARX 命名。
+- 验证状态：`src\app\RoadProtoArx.vcxproj` Release 构建通过，生成上方 ARX；托管 Ribbon Release 构建通过；核心测试和全局旧入口搜索结果见本轮最终验证。AutoCAD 图形界面加载仍待人工验证。
+- 是否可作为稳定测试版本：否。当前为旧入口清理和构建产物更新，CAD 图形界面仍待人工点验。
+
+## v0.1.33_20260624_DynamicArxName
+
+- 阶段：ARX 动态命名与 Release 产物更新。
+- ARX 文件名规则：`RoadProto_v0.1.33_<构建时间戳>_DynamicArxName.arx`。
+- 本次 Release 验证生成：`artifacts/x64/Release/RoadProto_v0.1.33_20260624_113953164_DynamicArxName.arx`。
+- 构建时间戳格式：`yyyyMMdd_HHmmssfff`。
+- 修改内容：
+  - `build/RoadProto.Build.props` 新增 `RoadProtoBuildTimestamp`，默认使用当前时间生成毫秒级时间戳。
+  - `RoadProtoArxBaseName` 改为 `RoadProto_$(RoadProtoVersion)_$(RoadProtoBuildTimestamp)_$(RoadProtoStage)`，每次编译都会生成带 `yyyyMMdd_HHmmssfff` 时间戳的新 ARX 文件名。
+  - 默认不覆盖同目录下既有 ARX 产物，方便保留多次构建结果用于回退和对比。
+  - `docs/dev/build_and_versioning.md`、README 和测试说明同步记录动态命名约束。
+- 已知问题：AutoCAD 图形界面加载新版 Release ARX 仍需人工验证。
+- 是否可作为稳定测试版本：否。当前为构建命名逻辑调整和 Release 产物更新，功能链路仍沿用本轮未发布改动。
+
 ## 未发布 - 2026-06-23
 
 - 阶段：路基模板路缘石与默认参数优化。
@@ -11,42 +38,13 @@
   - 默认模板和手动新增的中分带外侧路缘石默认启用，宽度、高度和埋深均为 `0.15`。
   - 默认坡度改为按左右侧写入：行车道、硬路肩、路缘带左侧 `0.02`、右侧 `-0.02`；土路肩左侧 `0.03`、右侧 `-0.03`；其他部件为 `0`。
   - 坡度几何应用改为按旋转符号换算外向高程：左侧正坡向外降低，右侧负坡向外降低。
-  - 删除 WPF 和 Agent 用户协议中的旧部件高度差输入；内部遗留字段归一化为 `0`，部件高差改由路缘石高度驱动。
+  - 删除 WPF 中的旧部件高度差输入；内部遗留字段归一化为 `0`，部件高差改由路缘石高度驱动。
   - 内侧路缘石高度影响当前部件内侧起点，外侧路缘石高度影响外侧相邻部件起点。
   - 路缘石显示改为顶部贴合当前部件顶面，按部件颜色填充并增加白色描边，埋深继续向下表达。
   - 2026-06-24 补充：`DnSubgradeTemplateEntity` 部件中文标注改为沿横断面竖向绘制，减少模型空间相邻部件标签横向重叠；模板名称和 `CL` 标记保持横向。
   - `DnSubgradeTemplateEntity` 持久化版本升级到 `3`，旧图纸新增路缘石字段按未启用兼容读取。
   - WPF 路基模板窗口新增内外侧路缘石输入，并在预览中按新高差规则叠画路缘石。
-  - Agent 路基模板显式部件 schema 新增 `innerCurb` / `outerCurb` 可选对象，移除 `components[].height` 用户字段，C++ mapper 可把路缘石参数写入领域模型。
-- 验证状态：核心测试 Debug 构建与运行通过；托管 Bridge 测试通过；Agent 后端测试通过；WPF Debug 构建通过；`src\app\RoadProtoArx.vcxproj` Debug 构建通过。2026-06-24 竖向标注补充已通过核心测试 Debug 构建与运行、`src\app\RoadProtoArx.vcxproj` Debug 构建和 `git diff --check`。AutoCAD 图形界面和 DWG 保存重开仍待后续手工验证。
-
-## v0.1.32_20260604_AgentPrototype
-
-- 阶段：设计软件原型 Agent 首版链路。
-- 当前为 Agent 原型开发分支记录；`build/RoadProto.Build.props` 尚未切换正式发布版本，Release ARX 文件名仍沿用 `RoadProto_v0.1.31_20260527_SectionDrawingConfig.arx`。
-- 新增 `AI_AGENT` 模块，注册 `RD_AI_EXECUTE_TOOL_FILE` 受控工具网关命令。
-- 新增托管 WPF 命令 `RD_AI_ASSISTANT_OPEN`，可打开或激活 AutoCAD 右侧 Agent 面板，并在 Ribbon 中增加 `Agent / AI 助手` 入口。
-- 修正 AutoCAD 右侧 WPF Agent 面板中文输入焦点问题：Palette 改用保持焦点的 WPF 挂载方式，并对输入框启用 IME/文本组合输入焦点保护，避免中文输入跳入 CAD 命令行。
-- 新增 WPF Agent 面板自动管理本地 sidecar 生命周期：打开 `RD_AI_ASSISTANT_OPEN` 时自动启动 `RoadProto.Agent.Host`，关闭面板或卸载托管插件时关闭本次由面板启动的后端；若已有可用后端则只复用连接，不强制结束外部进程。
-- 新增 `.NET 8` 本地 Agent sidecar，提供 `/health`、`/api/chat` 和 `/admin` 本地管理控制台；`AgentPlanner` 优先识别路基模板创建意图，普通问答可转发到 OpenAI-compatible 模型 Provider。
-- 新增 OpenAI-compatible Provider 配置模板和运行期模型 Profile 管理，支持 OpenAI、DeepSeek、DashScope/阿里百炼/千问等兼容接口；API Key 使用 Windows 当前用户 DPAPI 加密保存到项目根目录 `.roadproto-agent/secrets/`。
-- 新增 `/admin` 本地管理控制台，支持模型 Profile 配置、连接测试、Windows 当前用户加密保存 API Key、Markdown skill 上传和 Markdown 知识库上传。
-- 新增 Agent 管理配置存储，配置位于项目根目录 `.roadproto-agent/config.json`，上传的 skill 和知识库 Markdown 分别保存在项目根目录 `.roadproto-agent/skills` 与 `.roadproto-agent/knowledge` 目录；首次切换时会把旧 `%LOCALAPPDATA%\RoadProto\Agent\` 数据复制到项目目录。
-- 新增 RoadProto Agent skill 文档读取能力，首个 skill 为 `docs/agent/skills/cross_section/subgrade_template_create.md`。
-- 新增 `cross_section.subgrade_template.create` 自动化工具，用于创建 `DnSubgradeTemplateEntity` 路基模板实体。
-- 新增 Agent 工具 JSON 协议：顶层字段白名单、请求文件大小限制、`%TEMP%\RoadProtoAgent\` 结果路径限制、成功/失败结果 JSON 写回、parse 级失败结果写回。
-- 新增路基模板工具参数 mapper，覆盖模板名称、道路等级、设计速度、路基宽度、车道数、车道宽度、硬路肩、土路肩、中分带、边坡、边沟、路面结构说明、显示比例、插入点、默认部件和显式部件列表；缺失参数由默认值补齐。
-- 升级后端工具调用入口为 `AgentPlanner`，新增 `SubgradeTemplateCreatePlanner` 和路基模板局部部件操作解析，明确 skill 作为 prompt 上下文和 planner 开发契约，真实 CAD 工具调用仍由结构化 `toolCall`、WPF 确认卡片和 C++ 白名单工具网关完成。
-- 新增市政道路路基模板自然语言识别：用户表达 `市政道路`、`城市道路`、`市政路`、`城区道路` 且未明确具体等级时，`AgentPlanner` 使用 `UrbanArterial` 默认参数。
-- 新增路基模板 `componentOperations` 协议和 mapper 应用能力，当前支持在默认模板基础上于右侧机动车道组外侧新增 `TravelLane`，未指定宽度时由 C++ mapper 从同侧最后一个行车道宽度推断。
-- 修正 AutoCAD 托管 WPF Agent 面板在 .NET Framework 宿主中使用 `System.Text.Json` 可能触发程序集绑定异常的问题；WPF 聊天客户端和工具请求文件改用 `System.Web.Extensions` 内置 JSON 序列化，避免闲聊和工具确认流在请求前失败。
-- 修正 Agent 路基模板工具在 `PickInCad` 插入点模式下解析 `x/y: null` 失败的问题；工具网关现在会把空坐标视为需要在 CAD 中点取插入点，避免确认工具调用后直接写回 `ParseError` 而不创建路基模板。
-- 修正用户在 Agent 面板中对上一轮路基模板创建意图输入“确认/继续/执行”后，后端转入普通模型回复而没有返回结构化 `toolCall` 的问题；现在会优先回看最近用户原始需求，并可从上一条待执行摘要中兜底恢复 `cross_section.subgrade_template.create` 工具确认卡片。
-- 补充 Agent 代码与文档结构规范，新增 `docs/architecture/agent_code_structure.md`，明确 `.NET 8` sidecar、WPF 面板、C++ 工具网关、skill/知识库、运行期 `.roadproto-agent/`、`%TEMP%\RoadProtoAgent\` 和新增工具/Provider 的文件落点，避免 Agent 功能打乱既有分层。
-- 验证状态：`RoadProto.sln` Release 构建通过；`RoadProtoCoreTests.exe` Release 运行通过；`dotnet test src\agent\RoadProto.Agent.Tests\RoadProto.Agent.Tests.csproj` 通过；`dotnet build src\agent\RoadProto.Agent.Host\RoadProto.Agent.Host.csproj -c Release` 通过；`dotnet build src\ui\wpf\RoadProto.Terrain.UI\RoadProto.Terrain.UI.csproj -c Release` 通过；`src\app\RoadProtoArx.vcxproj` Debug 构建通过；`/admin` 本地管理控制台已完成浏览器点验。
-- 本轮 `AgentPlanner` V1 验证状态：`dotnet test src\agent\RoadProto.Agent.Tests\RoadProto.Agent.Tests.csproj` 通过 65 个测试；`RoadProtoCoreTests.exe` Debug/Release 均通过；Agent Host Release、WPF Release 和 `RoadProto.sln` Release 均 0 警告 0 错误；主项目目录启动 `RoadProto.Agent.Host.exe` 后，`/health` 返回 `ok`，`/api/chat` 对“市政道路路基模板，最右侧增加一个行车道部件”返回 `UrbanArterial` 和 `AddComponent/Right/TravelLane/OutermostMotorLane` 结构化工具调用。
-- Core Console 脚本烟测曾尝试加载临时 ARX 并执行 `RD_AI_EXECUTE_TOOL_FILE`，但未形成可采信的命令级结果文件；该项不作为通过记录。
-- 是否可作为稳定测试版本：否。Agent 原型自动化构建与测试已通过，但 AutoCAD 2021 图形界面的 Agent 面板、确认卡片、实体创建和结果文件完整端到端点验仍待手工执行。
+- 验证状态：核心测试 Debug 构建与运行通过；托管 Bridge 测试通过；WPF Debug 构建通过；`src\app\RoadProtoArx.vcxproj` Debug 构建通过。2026-06-24 竖向标注补充已通过核心测试 Debug 构建与运行、`src\app\RoadProtoArx.vcxproj` Debug 构建和 `git diff --check`。AutoCAD 图形界面和 DWG 保存重开仍待后续手工验证。
 
 ## 未发布 - 2026-05-29
 

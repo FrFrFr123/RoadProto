@@ -42,15 +42,24 @@ Get-CimInstance Win32_Process -Filter "name='taskhostw.exe'" |
 ## ARX 命名规则
 
 ```text
-RoadProto_版本号_日期_阶段.arx
+RoadProto_版本号_构建时间戳_阶段.arx
 ```
+
+构建时间戳格式固定为 `yyyyMMdd_HHmmssfff`。`build/RoadProto.Build.props` 在每次 MSBuild 调用且外部未显式传入 `RoadProtoBuildTimestamp` 时，都会用当前时间生成新的 `RoadProtoBuildTimestamp`，并拼入 `RoadProtoArxBaseName`。
+
+约束：
+
+- 每次编译都会生成新的 ARX 文件名。
+- 新文件名必须包含 `RoadProtoVersion`、`RoadProtoBuildTimestamp` 和 `RoadProtoStage`。
+- 默认不覆盖同目录下既有 ARX 产物，便于回退和对比。
+- 如需复现某个固定文件名，可在命令行显式传入 `/p:RoadProtoBuildTimestamp=yyyyMMdd_HHmmssfff`。
 
 示例：
 
 ```text
-RoadProto_v0.1.0_20260508_Framework.arx
-RoadProto_v0.1.1_20260509_CommandRegistry.arx
-RoadProto_v0.2.0_20260515_CadAdapter.arx
+RoadProto_v0.1.34_20260624_113012123_PrototypeCleanup.arx
+RoadProto_v0.1.34_20260624_113215456_PrototypeCleanup.arx
+RoadProto_v0.2.0_20260624_113450789_CadAdapter.arx
 ```
 
 ## 版本阶段
@@ -74,6 +83,7 @@ RoadProto_v0.2.0_20260515_CadAdapter.arx
 - `RoadProtoVersion`
 - `RoadProtoBuildDate`
 - `RoadProtoStage`
+- `RoadProtoBuildTimestamp`
 - `RoadProtoArxBaseName`
 
 ObjectARX 路径集中在 `build/ObjectARX2021.props`：

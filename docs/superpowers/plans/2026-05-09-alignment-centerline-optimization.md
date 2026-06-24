@@ -1,6 +1,6 @@
 # 平面布线交互与 WPF 参数窗口优化 Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For implementation workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** 优化平面布线，使创建时可见预览、道路中线按元素着色、参数编辑使用 WPF、主点几何符合回旋线平曲线公式，并提供第一版参数夹点和引线桩号。
 

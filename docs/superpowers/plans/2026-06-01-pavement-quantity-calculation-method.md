@@ -1,6 +1,6 @@
 # 路面工程量统计断面计算方法实施计划
 
-> **给 agentic workers：** 必须使用 `superpowers:subagent-driven-development`（推荐）或 `superpowers:executing-plans` 按任务执行。步骤使用复选框（`- [ ]`）跟踪。
+> **给开发执行者：** 必须使用 `superpowers:subagent-driven-development`（推荐）或 `superpowers:executing-plans` 按任务执行。步骤使用复选框（`- [ ]`）跟踪。
 
 **目标：** 为 `RD_DRAWING_PAVEMENT_QUANTITY_TABLE` 增加“平均断面法”和“依照路面面积方法”两种断面计算方法选择。
 

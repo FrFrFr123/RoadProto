@@ -1,6 +1,6 @@
 # Profile Grade Graph Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For implementation workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Build the first longitudinal profile grade graph feature: select a road centerline, derive ground samples from linked TIN or DMX, insert a custom profile graph entity, and edit/update its display properties through WPF.
 
