@@ -13,7 +13,11 @@
 #include "dbapserv.h"
 #include "dbsymtb.h"
 
+#include <Windows.h>
 #include <cwctype>
+#include <filesystem>
+#include <fstream>
+#include <iomanip>
 #include <sstream>
 #include <string>
 #endif
@@ -79,6 +83,74 @@ bool resolveObjectIdFromHandle(const std::wstring& handleText, AcDbObjectId& ent
 
     const AcDbHandle handle(handleText.c_str());
     return database->getAcDbObjectId(entityId, false, handle) == Acad::eOk && !entityId.isNull();
+}
+
+std::string wideToUtf8(const std::wstring& value)
+{
+    if (value.empty()) {
+        return {};
+    }
+
+    const int size = WideCharToMultiByte(
+        CP_UTF8,
+        0,
+        value.c_str(),
+        static_cast<int>(value.size()),
+        nullptr,
+        0,
+        nullptr,
+        nullptr);
+    if (size <= 0) {
+        return {};
+    }
+
+    std::string output(static_cast<std::size_t>(size), '\0');
+    WideCharToMultiByte(
+        CP_UTF8,
+        0,
+        value.c_str(),
+        static_cast<int>(value.size()),
+        output.data(),
+        size,
+        nullptr,
+        nullptr);
+    return output;
+}
+
+std::string escapeAgentResultValue(const std::wstring& value)
+{
+    const auto utf8 = wideToUtf8(value);
+    std::ostringstream escaped;
+    escaped << std::uppercase << std::hex;
+    for (const unsigned char ch : utf8) {
+        if (ch == '%' || ch == '\r' || ch == '\n') {
+            escaped << '%' << std::setw(2) << std::setfill('0') << static_cast<int>(ch);
+        } else {
+            escaped << static_cast<char>(ch);
+        }
+    }
+    return escaped.str();
+}
+
+void writeAgentToolResultFile(
+    const SubgradeTemplateDialogResponse& response,
+    bool succeeded,
+    const std::wstring& entityId,
+    const std::wstring& message)
+{
+    if (response.agentResultPath.empty()) {
+        return;
+    }
+
+    std::ofstream stream(std::filesystem::path(response.agentResultPath), std::ios::binary);
+    if (!stream) {
+        return;
+    }
+
+    stream << "succeeded=" << (succeeded ? 1 : 0) << '\n';
+    stream << "entityId=" << escapeAgentResultValue(entityId) << '\n';
+    stream << "templateName=" << escapeAgentResultValue(response.data.properties.name) << '\n';
+    stream << "message=" << escapeAgentResultValue(message) << '\n';
 }
 
 std::wstring entityHandleText(AcDbEntity* entity)
@@ -293,6 +365,7 @@ void runSubgradeTemplateApplyDialogFileCommand()
     }
 
     if (!response.accepted) {
+        writeAgentToolResultFile(response, false, L"", L"用户取消了路基模板创建。");
         return;
     }
 
@@ -304,6 +377,7 @@ void runSubgradeTemplateApplyDialogFileCommand()
         AcDbObjectId entityId;
         if (!appendEntityToModelSpace(entity, entityId)) {
             delete entity;
+            writeAgentToolResultFile(response, false, L"", L"插入 DnSubgradeTemplateEntity 失败。");
             editor.writeError(L"插入 DnSubgradeTemplateEntity 失败。");
             return;
         }
@@ -312,22 +386,26 @@ void runSubgradeTemplateApplyDialogFileCommand()
         entity->close();
         acedUpdateDisplay();
         writeCreatedMessage(editor, handle, response.data);
+        writeAgentToolResultFile(response, true, handle, L"路基模板实体已创建。");
         return;
     }
 
     AcDbObjectId entityId;
     if (!resolveObjectIdFromHandle(response.handle, entityId)) {
+        writeAgentToolResultFile(response, false, response.handle, L"未找到对话框结果对应的路基模板实体。");
         editor.writeWarning(L"未找到对话框结果对应的路基模板实体。");
         return;
     }
 
     DnSubgradeTemplateEntity* entity = nullptr;
     if (acdbOpenObject(entity, entityId, AcDb::kForWrite) != Acad::eOk || entity == nullptr) {
+        writeAgentToolResultFile(response, false, response.handle, L"无法打开路基模板实体。");
         editor.writeError(L"无法打开路基模板实体。");
         return;
     }
     if (!entity->isKindOf(DnSubgradeTemplateEntity::desc())) {
         entity->close();
+        writeAgentToolResultFile(response, false, response.handle, L"handle 对应对象不是路基模板实体。");
         editor.writeWarning(L"handle 对应对象不是路基模板实体。");
         return;
     }
@@ -337,6 +415,7 @@ void runSubgradeTemplateApplyDialogFileCommand()
     entity->close();
     acedUpdateDisplay();
     editor.writeMessage(L"路基模板参数已更新。");
+    writeAgentToolResultFile(response, true, response.handle, L"路基模板参数已更新。");
 }
 
 #else

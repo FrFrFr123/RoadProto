@@ -425,6 +425,9 @@ bool readSubgradeTemplateDialogResponse(
     response.action = actionFromCode(valueOrDefault(values, L"action"));
     response.pickComponentIndex = intValue(values, L"pickComponentIndex", -1);
     response.accepted = boolValue(values, L"accepted", false);
+    response.agentTraceId = valueOrDefault(values, L"agentTraceId");
+    response.agentTaskId = valueOrDefault(values, L"agentTaskId");
+    response.agentResultPath = valueOrDefault(values, L"agentResultPath");
     response.handle = valueOrDefault(values, L"handle");
     response.insertionPoint = AcGePoint3d(
         doubleValue(values, L"insertionX", 0.0),

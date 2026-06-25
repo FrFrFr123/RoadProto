@@ -33,6 +33,8 @@
 
 每个可复用能力都应记录在 `docs/reuse/` 下。
 
+每次 Agent 相关修改都必须同步检查 `docs/agent_builder/`：当前项目规则写入 `docs/agent/`，跨项目可复用方法、模板和实践结论写入 `docs/agent_builder/`，具体同步范围按 `docs/agent_builder/maintenance_policy.md` 执行。
+
 每个生成的 ARX 版本都要记录到 `docs/dev/version_log.md`。
 
 使用 `.worktrees/<分支名>` 开发时，主项目目录必须同步保留最新文档和所有代码：在 worktree 内保存正式代码或文档后，收尾前必须按相同相对路径同步到主项目目录 `F:\0_GPT_道路设计原型功能项目`。这条规则适用于 `AGENTS.md`、`README.md`、`.gitignore`、`RoadProto.sln`、`build/`、`src/`、`tests/`、`third_party/`、`assets/`、`docs/`、`samples/` 和用户明确要求可见的说明文档或代码文件。

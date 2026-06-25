@@ -10,6 +10,7 @@
 - `RD_PROFILE_xxx`：纵断面设计。
 - `RD_SECTION_xxx`：横断面设计。
 - `RD_DRAWING_xxx`：出图、出表、算量。
+- `RD_AGENT_xxx`：可控工程 Agent。
 - `RD_UTIL_xxx`：辅助功能。
 
 ## 模块元数据

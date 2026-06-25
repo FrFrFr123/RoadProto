@@ -5,6 +5,7 @@
 #include "app/startup/DrawingQuantityStartupRegistration.h"
 #include "app/startup/ProfileStartupRegistration.h"
 #include "core/version/VersionInfo.h"
+#include "modules/agent/AgentModule.h"
 #include "modules/alignment/AlignmentModule.h"
 #include "modules/intersection/IntersectionModule.h"
 #include "modules/terrain/TerrainModule.h"
@@ -21,6 +22,7 @@ void registerBuiltInModules(core::ModuleRegistry& moduleRegistry)
     registerProfileModuleForStartup(moduleRegistry);
     registerCrossSectionModuleForStartup(moduleRegistry);
     registerDrawingQuantityModuleForStartup(moduleRegistry);
+    moduleRegistry.registerModule(modules::agent::createAgentModule());
     moduleRegistry.registerModule(modules::intersection::createIntersectionModule());
 }
 

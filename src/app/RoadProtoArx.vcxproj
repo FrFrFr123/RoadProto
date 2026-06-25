@@ -104,12 +104,15 @@
     <ClCompile Include="..\application\terrain\TerrainTinCreateService.cpp" />
     <ClCompile Include="..\application\terrain\TerrainUpdateSampleService.cpp" />
     <ClCompile Include="..\application\intersection\IntersectionInfoService.cpp" />
+    <ClCompile Include="..\modules\agent\AgentModule.cpp" />
     <ClCompile Include="..\modules\alignment\AlignmentModule.cpp" />
     <ClCompile Include="..\modules\cross_section\CrossSectionModule.cpp" />
     <ClCompile Include="..\modules\drawing_quantity\DrawingQuantityModule.cpp" />
     <ClCompile Include="..\modules\terrain\TerrainModule.cpp" />
     <ClCompile Include="..\modules\intersection\IntersectionModule.cpp" />
     <ClCompile Include="..\modules\profile\ProfileModule.cpp" />
+    <ClCompile Include="..\cad_adapter\objectarx\agent\ObjectArxAgentConsoleCommand.cpp" />
+    <ClCompile Include="..\cad_adapter\objectarx\agent\ObjectArxAgentSubgradeTemplateToolCommand.cpp" />
     <ClCompile Include="..\ui\ribbon\RibbonModel.cpp" />
     <ClCompile Include="..\ui\ribbon\RibbonRegistrationService.cpp" />
     <ClCompile Include="..\cad_adapter\objectarx\ObjectArxCommandRegistrar.cpp" />

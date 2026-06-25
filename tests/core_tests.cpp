@@ -40,6 +40,7 @@
 #include "app/startup/ProfileStartupRegistration.h"
 #include "modules/cross_section/CrossSectionModule.h"
 #include "modules/drawing_quantity/DrawingQuantityModule.h"
+#include "modules/agent/AgentModule.h"
 #include "modules/profile/ProfileModule.h"
 #include "ui/ribbon/RibbonModel.h"
 
@@ -121,9 +122,9 @@ void pavementLayerTemplateDocumentationAndVersionContracts()
     const auto root = findRepositoryRootForTests();
 
     const auto buildProps = readTextFileForTests(root / "build" / "RoadProto.Build.props");
-    CHECK(buildProps.find("<RoadProtoVersion>v0.1.34</RoadProtoVersion>") != std::string::npos);
+    CHECK(buildProps.find("<RoadProtoVersion>v0.1.35</RoadProtoVersion>") != std::string::npos);
     CHECK(buildProps.find("<RoadProtoBuildDate>20260624</RoadProtoBuildDate>") != std::string::npos);
-    CHECK(buildProps.find("<RoadProtoStage>PrototypeCleanup</RoadProtoStage>") != std::string::npos);
+    CHECK(buildProps.find("<RoadProtoStage>AgentMvp</RoadProtoStage>") != std::string::npos);
     CHECK(buildProps.find("<RoadProtoBuildTimestamp Condition=\"'$(RoadProtoBuildTimestamp)' == ''\">$([System.DateTime]::Now.ToString('yyyyMMdd_HHmmssfff'))</RoadProtoBuildTimestamp>") != std::string::npos);
     CHECK(buildProps.find("<RoadProtoArxBaseName>RoadProto_$(RoadProtoVersion)_$(RoadProtoBuildTimestamp)_$(RoadProtoStage)</RoadProtoArxBaseName>") != std::string::npos);
 
@@ -178,15 +179,15 @@ void pavementLayerTemplateDocumentationAndVersionContracts()
     CHECK(versionLog.find("新增路面结构层创建向导") != std::string::npos);
     CHECK(versionLog.find("沥青封层") != std::string::npos);
     CHECK(versionLog.find("搭板") != std::string::npos);
-    CHECK(versionLog.find("v0.1.34_20260624_PrototypeCleanup") != std::string::npos);
-    CHECK(versionLog.find("RoadProto_v0.1.34_<构建时间戳>_PrototypeCleanup.arx") != std::string::npos);
+    CHECK(versionLog.find("v0.1.35_20260624_AgentMvp") != std::string::npos);
+    CHECK(versionLog.find("RoadProto_v0.1.35_<构建时间戳>_AgentMvp.arx") != std::string::npos);
     CHECK(versionLog.find("每次编译都会生成带 `yyyyMMdd_HHmmssfff` 时间戳的新 ARX 文件名") != std::string::npos);
     CHECK(versionLog.find("SectionDrawingConfigModel") != std::string::npos);
     CHECK(versionLog.find("PavementQuantityDrawingFaceSampler") != std::string::npos);
     CHECK(versionLog.find("manualEdited=true") != std::string::npos);
 
     const auto readme = readTextFileForTests(root / "README.md");
-    CHECK(readme.find("RoadProto_v0.1.34_<构建时间戳>_PrototypeCleanup.arx") != std::string::npos);
+    CHECK(readme.find("RoadProto_v0.1.35_<构建时间戳>_AgentMvp.arx") != std::string::npos);
     CHECK(readme.find("每次编译都会生成带 `yyyyMMdd_HHmmssfff` 时间戳的新 ARX 文件名") != std::string::npos);
     CHECK(readme.find("RD_SECTION_PAVEMENT_LAYER_TEMPLATE_CREATE") != std::string::npos);
     CHECK(readme.find("RD_SECTION_DRAWING_CONFIG") != std::string::npos);
@@ -5121,6 +5122,64 @@ void drawingQuantityModuleRegistersPavementQuantityCommandAndRibbonPanel()
     CHECK(ribbon.tab().panels.front().title == L"出图出表");
 }
 
+void agentModuleRegistersConsoleCommandsAndRibbonPanel()
+{
+    roadproto::core::CommandRegistry commands;
+    roadproto::ui::RibbonModel ribbon;
+
+    auto module = roadproto::modules::agent::createAgentModule();
+    module.registerCommands(commands);
+    module.registerRibbon(ribbon);
+
+    const auto consoleCommand = commands.find(L"RD_AGENT_CONSOLE");
+    CHECK(consoleCommand.has_value());
+    if (consoleCommand) {
+        CHECK(consoleCommand->moduleCode == L"AGENT");
+        CHECK(consoleCommand->displayName == L"Agent 控制台");
+        CHECK(consoleCommand->businessDocPath == L"docs/business/agent/Agent控制台_MVP.md");
+        CHECK(consoleCommand->ribbonAttachable);
+        checkBusinessDocExistsForTests(consoleCommand->businessDocPath);
+    }
+
+    const auto healthCommand = commands.find(L"RD_AGENT_HEALTH");
+    CHECK(healthCommand.has_value());
+    if (healthCommand) {
+        CHECK(healthCommand->moduleCode == L"AGENT");
+        CHECK(healthCommand->businessDocPath == L"docs/business/agent/Agent控制台_MVP.md");
+        CHECK(!healthCommand->ribbonAttachable);
+        checkBusinessDocExistsForTests(healthCommand->businessDocPath);
+    }
+
+    const auto logsCommand = commands.find(L"RD_AGENT_LOGS");
+    CHECK(logsCommand.has_value());
+    if (logsCommand) {
+        CHECK(logsCommand->moduleCode == L"AGENT");
+        CHECK(logsCommand->businessDocPath == L"docs/business/agent/Agent控制台_MVP.md");
+        CHECK(!logsCommand->ribbonAttachable);
+        checkBusinessDocExistsForTests(logsCommand->businessDocPath);
+    }
+
+    const auto subgradeToolCommand = commands.find(L"RD_AGENT_SUBGRADE_TEMPLATE_TOOL_FILE");
+    CHECK(subgradeToolCommand.has_value());
+    if (subgradeToolCommand) {
+        CHECK(subgradeToolCommand->moduleCode == L"AGENT");
+        CHECK(subgradeToolCommand->displayName == L"Agent 路基模板工具");
+        CHECK(subgradeToolCommand->businessDocPath == L"docs/business/agent/路基模板Skill_增删改查_MVP.md");
+        CHECK(!subgradeToolCommand->ribbonAttachable);
+        checkBusinessDocExistsForTests(subgradeToolCommand->businessDocPath);
+    }
+
+    const auto& panels = ribbon.tab().panels;
+    const auto panel = std::find_if(
+        panels.begin(),
+        panels.end(),
+        [](const auto& item) { return item.moduleCode == L"AGENT"; });
+    CHECK(panel != panels.end());
+    if (panel != panels.end()) {
+        CHECK(panel->title == L"Agent");
+    }
+}
+
 void pavementQuantityCommandSourceContainsAggregationModeSaveDialog()
 {
     const auto sourcePath = findRepositoryRootForTests()
@@ -8599,6 +8658,7 @@ int main()
     pavementLayerTemplateDocumentationAndVersionContracts();
     startupRegistrationIncludesCrossSectionModule();
     drawingQuantityModuleRegistersPavementQuantityCommandAndRibbonPanel();
+    agentModuleRegistersConsoleCommandsAndRibbonPanel();
     pavementQuantityCommandSourceContainsAggregationModeSaveDialog();
     pavementQuantityCommandPrefersDrawingFacesContract();
     pavementStructureLegendCommandSourceContainsSelectionAndTemplateContracts();

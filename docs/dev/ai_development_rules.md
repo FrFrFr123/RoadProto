@@ -14,6 +14,7 @@
 - 每个原型命令都必须在命令元数据中指向对应功能的业务文档；内部 Bridge / handle 命令也必须指向对应功能或桥接说明文档。
 - 模块文档只能做模块职责、命令清单、代码落点和功能文档索引，不承载多个功能的详细业务规则。
 - 可复用能力必须记录到 `docs/reuse`。
+- 每次 Agent 相关修改都必须检查 `docs/agent_builder/maintenance_policy.md`，并把可跨项目复用的架构、入口路由、Skill / Intent、Schema、Rule、Tool、Adapter、执行控制、Trace 或评测经验同步到 `docs/agent_builder/`。
 - 每次形成可构建版本后都要更新 `docs/dev/version_log.md`。
 - 本机编译优先使用 VS2026 Insiders：`D:\Program Files\Microsoft Visual Studio\18\Insiders\Common7\IDE`；命令行优先使用 `D:\Program Files\Microsoft Visual Studio\18\Insiders\MSBuild\Current\Bin\amd64\MSBuild.exe`。
 - Git 仓库 URL 固定为 `https://github.com/FrFrFr123/RoadProto.git`；当前 PowerShell 若找不到 `git`，优先使用 VS2026 Insiders 自带 Git：`D:\Program Files\Microsoft Visual Studio\18\Insiders\Common7\IDE\CommonExtensions\Microsoft\TeamFoundation\Team Explorer\Git\cmd\git.exe`。

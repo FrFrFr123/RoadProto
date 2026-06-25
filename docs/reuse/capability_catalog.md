@@ -16,6 +16,13 @@
 | 地形 TIN 自定义实体 | V0.1.6 原型，支持 TrueColor 渐变边线高程着色、边界显示、DWG 持久化、RMesh 流转和双击编辑 handle 入口 | `src/cad_adapter/objectarx/terrain/DnTerrainTinEntity.*` |
 | AutoCAD 可见 Ribbon 托管插件 | V0.1.8 原型，创建带小图标且尺寸一致的 `RoadProto` / `数模` / `平面设计` Ribbon 入口，并转发数模和道路中线双击事件 | `src/ui/wpf/RoadProto.Terrain.UI/AutoCad/RoadProtoRibbonExtension.cs` |
 
+## 通用 Agent 能力
+
+| 能力 | 当前状态 | 源码 |
+| --- | --- | --- |
+| 可控工程 Agent MVP 底座 | 文档规划阶段，采用独立 `.NET 8 / ASP.NET Core` 后端仓库 `F:\0_GPT_RoadProtoAgentBackend` + RoadProto 本地 `AGENT` 薄模块 + WPF 可停靠 Agent Console，首个验证场景为路基模板创建 Agent | `docs/reuse/engineering_agent_mvp.md` |
+| 可复用 Agent Builder 手册 | 已建立跨项目文档区，归档用户初始 12 层 MVP 模板，并融合 RoadProto 实践形成入口路由、12 层模块、Skill / Intent / Tool 模板和后续维护规则 | `docs/agent_builder/README.md` |
+
 ## 通用道路设计能力
 
 | 能力 | 当前状态 | 源码 |

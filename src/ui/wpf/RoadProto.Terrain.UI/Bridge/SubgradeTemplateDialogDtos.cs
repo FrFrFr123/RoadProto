@@ -134,6 +134,9 @@ public sealed class SubgradeTemplateDialogResponse
     public SubgradeTemplateDialogAction Action { get; set; } = SubgradeTemplateDialogAction.None;
     public int PickComponentIndex { get; set; } = -1;
     public bool Accepted { get; set; }
+    public string AgentTraceId { get; set; } = string.Empty;
+    public string AgentTaskId { get; set; } = string.Empty;
+    public string AgentResultPath { get; set; } = string.Empty;
     public string Handle { get; set; } = string.Empty;
     public double InsertionX { get; set; }
     public double InsertionY { get; set; }

@@ -19,10 +19,10 @@ AI 或 Codex 进入项目时，应先阅读根目录 `AGENTS.md`。`README.md` �
 
 ## 当前版本
 
-- 版本：`v0.1.34`
+- 版本：`v0.1.35`
 - 构建日期：`20260624`
-- 阶段：`PrototypeCleanup`
-- ARX 文件名：`RoadProto_v0.1.34_<构建时间戳>_PrototypeCleanup.arx`
+- 阶段：`AgentMvp`
+- ARX 文件名：`RoadProto_v0.1.35_<构建时间戳>_AgentMvp.arx`
 - 命名规则：每次编译都会生成带 `yyyyMMdd_HHmmssfff` 时间戳的新 ARX 文件名，不覆盖 Release/Debug 目录下已有 ARX。
 - 托管 Ribbon 插件：`RoadProto.Terrain.UI.dll`
 - 输出目录：
@@ -40,7 +40,8 @@ AI 或 Codex 进入项目时，应先阅读根目录 `AGENTS.md`。`README.md` �
 - `src/application`：具体功能流程和 use case。
 - `src/modules`：业务模块，负责注册命令和 Ribbon 分组。
 - `src/ui`：Ribbon 模型、对话框、资源和 AutoCAD 托管 Ribbon 插件。
-- `docs`：架构说明、业务文档、复用说明、版本记录、开发规则。
+- `docs`：架构说明、业务文档、Agent 文档、复用说明、版本记录、开发规则。
+  - `docs/agent_builder/`：跨项目可复用 Agent 搭建能力文档区，保存原始 MVP 模板归档、融合版 12 层手册、入口路由、Skill / Intent / Tool 模板和维护规则。
 
 核心原则：
 
@@ -50,6 +51,25 @@ UI   -> 只负责参数收集和展示
 领域 -> 沉淀业务规则，不依赖 ObjectARX
 文档 -> 沉淀业务规则和复用能力
 ```
+
+## 可控工程 Agent MVP
+
+当前已新增可控工程 Agent 独立文档区：`docs/agent/`，并接入“独立 Agent 后端仓库 + RoadProto 本地 `AGENT` 薄模块 + WPF 可停靠 Agent Console”的 MVP 骨架。不建设独立 Web 前端，不嵌入 WebView。
+
+Agent 后端仓库固定规划为 `F:\0_GPT_RoadProtoAgentBackend`，使用 `.NET 8 / ASP.NET Core`。RoadProto 本体仓库仍为 `F:\0_GPT_道路设计原型功能项目`，只保留 WPF 面板、HTTP 客户端、本地 Bridge / Adapter 和契约文档。
+
+Agent MVP 已具备基础可控链路：自然语言输入、后端自动启动、独立后端状态机、DeepSeek / 阿里千问 / GLM / GPT 模型配置、API Key DPAPI 加密保存、用户确认、本地工具桥接、Trace 和流转日志。首个验证业务 Agent 为路基模板创建，但 Agent 架构独立于横断面模块。
+
+WPF Agent Console 打开时默认检查 `http://127.0.0.1:17861/health`，后端不可用时自动尝试启动 `F:\0_GPT_RoadProtoAgentBackend\artifacts\publish\RoadProtoAgentBackend.exe`。模型 API Key 由后端保存到 `%APPDATA%\RoadProtoAgent\settings.json` 并使用 Windows DPAPI 加密。日志默认保存在 `F:\0_GPT_RoadProtoAgentRuntime\logs\backend\` 和 `F:\0_GPT_RoadProtoAgentRuntime\logs\roadproto\`，保留最近 14 天或最多 1GB。AutoCAD 入口命令为 `RD_AGENT_CONSOLE`，托管 Palette 命令为 `RD_AGENT_CONSOLE_UI`。
+
+相关入口：
+
+- `docs/agent/README.md`
+- `docs/agent_builder/README.md`
+- `docs/agent/mvp_architecture.md`
+- `docs/modules/agent.md`
+- `docs/business/agent/Agent控制台_MVP.md`
+- `docs/business/agent/路基模板创建Agent_MVP验证.md`
 
 ## V0.1 示例模块
 
@@ -216,11 +236,11 @@ dotnet build src\ui\wpf\RoadProto.Terrain.UI\RoadProto.Terrain.UI.csproj -c Rele
 在 AutoCAD 2021 中手动验证当前 RoadProto 流程：
 
 ```text
-ARXLOAD artifacts\x64\Release\RoadProto_v0.1.34_<构建时间戳>_PrototypeCleanup.arx
+ARXLOAD artifacts\x64\Release\RoadProto_v0.1.35_<构建时间戳>_AgentMvp.arx
 NETLOAD artifacts\managed\Release\net48\RoadProto.Terrain.UI.dll
 ```
 
-加载后可在 Ribbon 中打开 `RoadProto` 选项卡，点击 `数模` 面板下的 `地形构网`、`编辑数模`、`导出数模` 或 `导入数模`；也可点击 `平面设计` 面板下的 `平面布线`、`编辑平曲线参数`、`导出中线 ICD` 和 `导入中线 ICD`；纵断面入口位于 `纵断面设计` 面板下的 `纵断面拉坡图` 和 `创建竖曲线`；横断面入口位于 `横断面设计` 面板下的 `创建路基模板`、`创建边坡模板`、`创建路面结构层模板`、`横断面戴帽`、`编辑道路模型`、`查看横断面` 和 `横断面图配置`；出图出表入口位于 `出图出表` 面板下的 `路面工程量统计表` 和 `路面结构图例`。命令行可直接运行 `DN_TERRAIN_TIN_CREATE`、`DN_TERRAIN_TIN_EDIT`、`DN_TERRAIN_TIN_EXPORT`、`DN_TERRAIN_TIN_IMPORT`、`RD_ALIGN_CENTERLINE_CREATE`、`RD_ALIGN_CURVE_PARAM_EDIT`、`RD_ALIGN_CENTERLINE_EXPORT_ICD`、`RD_ALIGN_CENTERLINE_IMPORT_ICD`、`RD_PROFILE_GRADE_GRAPH_CREATE`、`RD_PROFILE_VERTICAL_CURVE_CREATE`、`RD_PROFILE_VERTICAL_CURVE_ADD_PVI`、`RD_PROFILE_VERTICAL_CURVE_DELETE_PVI`、`RD_SECTION_SUBGRADE_TEMPLATE_CREATE`、`RD_SECTION_SLOPE_TEMPLATE_CREATE`、`RD_SECTION_PAVEMENT_LAYER_TEMPLATE_CREATE`、`RD_SECTION_ROAD_MODEL_CREATE`、`RD_SECTION_ROAD_MODEL_EDIT`、`RD_SECTION_ROAD_MODEL_VIEW_SECTION`、`RD_SECTION_DRAWING_CONFIG`、`RD_DRAWING_PAVEMENT_QUANTITY_TABLE` 和 `RD_DRAWING_PAVEMENT_STRUCTURE_LEGEND`。数模流转文件后缀固定为 `.rmesh`，道路中线流转文件后缀固定为 `.icd`，纵断面地面线文件后缀固定为 `.dmx`，路面结构层模板流转文件后缀固定为 `.rpavement.xml`，横断面图配置流转文件使用 `.csv`。
+加载后可在 Ribbon 中打开 `RoadProto` 选项卡，点击 `数模` 面板下的 `地形构网`、`编辑数模`、`导出数模` 或 `导入数模`；也可点击 `平面设计` 面板下的 `平面布线`、`编辑平曲线参数`、`导出中线 ICD` 和 `导入中线 ICD`；纵断面入口位于 `纵断面设计` 面板下的 `纵断面拉坡图` 和 `创建竖曲线`；横断面入口位于 `横断面设计` 面板下的 `创建路基模板`、`创建边坡模板`、`创建路面结构层模板`、`横断面戴帽`、`编辑道路模型`、`查看横断面` 和 `横断面图配置`；出图出表入口位于 `出图出表` 面板下的 `路面工程量统计表` 和 `路面结构图例`；Agent 入口位于 `Agent` 面板下的 `Agent 控制台`。命令行可直接运行 `DN_TERRAIN_TIN_CREATE`、`DN_TERRAIN_TIN_EDIT`、`DN_TERRAIN_TIN_EXPORT`、`DN_TERRAIN_TIN_IMPORT`、`RD_ALIGN_CENTERLINE_CREATE`、`RD_ALIGN_CURVE_PARAM_EDIT`、`RD_ALIGN_CENTERLINE_EXPORT_ICD`、`RD_ALIGN_CENTERLINE_IMPORT_ICD`、`RD_PROFILE_GRADE_GRAPH_CREATE`、`RD_PROFILE_VERTICAL_CURVE_CREATE`、`RD_PROFILE_VERTICAL_CURVE_ADD_PVI`、`RD_PROFILE_VERTICAL_CURVE_DELETE_PVI`、`RD_SECTION_SUBGRADE_TEMPLATE_CREATE`、`RD_SECTION_SLOPE_TEMPLATE_CREATE`、`RD_SECTION_PAVEMENT_LAYER_TEMPLATE_CREATE`、`RD_SECTION_ROAD_MODEL_CREATE`、`RD_SECTION_ROAD_MODEL_EDIT`、`RD_SECTION_ROAD_MODEL_VIEW_SECTION`、`RD_SECTION_DRAWING_CONFIG`、`RD_DRAWING_PAVEMENT_QUANTITY_TABLE`、`RD_DRAWING_PAVEMENT_STRUCTURE_LEGEND` 和 `RD_AGENT_CONSOLE`。数模流转文件后缀固定为 `.rmesh`，道路中线流转文件后缀固定为 `.icd`，纵断面地面线文件后缀固定为 `.dmx`，路面结构层模板流转文件后缀固定为 `.rpavement.xml`，横断面图配置流转文件使用 `.csv`。
 
 ## 本机运行与内存排查
 

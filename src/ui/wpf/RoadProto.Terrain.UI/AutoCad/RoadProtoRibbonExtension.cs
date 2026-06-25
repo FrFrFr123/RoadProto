@@ -21,6 +21,7 @@ using CoreApplication = Autodesk.AutoCAD.ApplicationServices.Core.Application;
 [assembly: CommandClass(typeof(RoadProto.Terrain.UI.AutoCad.RoadModelDialogCommands))]
 [assembly: CommandClass(typeof(RoadProto.Terrain.UI.AutoCad.RoadModelSectionViewerCommands))]
 [assembly: CommandClass(typeof(RoadProto.Terrain.UI.AutoCad.SectionDrawingConfigDialogCommands))]
+[assembly: CommandClass(typeof(RoadProto.Terrain.UI.Agent.AgentConsoleCommands))]
 
 namespace RoadProto.Terrain.UI.AutoCad;
 
@@ -51,6 +52,8 @@ public sealed class RoadProtoRibbonExtension : IExtensionApplication
     private const string DrawingQuantityPanelId = "ROADPROTO_DRAWING_QUANTITY_PANEL";
     private const string PavementQuantityTableButtonId = "ROADPROTO_RD_DRAWING_PAVEMENT_QUANTITY_TABLE";
     private const string PavementStructureLegendButtonId = "ROADPROTO_RD_DRAWING_PAVEMENT_STRUCTURE_LEGEND";
+    private const string AgentPanelId = "ROADPROTO_AGENT_PANEL";
+    private const string AgentConsoleButtonId = "ROADPROTO_RD_AGENT_CONSOLE";
     private const string TerrainTinDxfName = "DNTERRAINTINENTITY";
     private const string RoadCenterlineDxfName = "DNROADCENTERLINEENTITY";
     private const string ProfileGradeGraphDxfName = "DNPROFILEGRADEGRAPHENTITY";
@@ -363,6 +366,27 @@ public sealed class RoadProtoRibbonExtension : IExtensionApplication
                 "路面结构图例",
                 "选择道路模型或横断面图并绘制路面结构层图例",
                 "RD_DRAWING_PAVEMENT_STRUCTURE_LEGEND "));
+        }
+
+        var agentPanel = tab.Panels.FirstOrDefault(item => item.Source.Id == AgentPanelId);
+        if (agentPanel == null)
+        {
+            var source = new RibbonPanelSource
+            {
+                Id = AgentPanelId,
+                Title = "Agent",
+            };
+            agentPanel = new RibbonPanel { Source = source };
+            tab.Panels.Add(agentPanel);
+        }
+
+        if (!agentPanel.Source.Items.OfType<RibbonButton>().Any(item => item.Id == AgentConsoleButtonId))
+        {
+            agentPanel.Source.Items.Add(CreateAgentCommandButton(
+                AgentConsoleButtonId,
+                "Agent 控制台",
+                "打开可停靠的可控工程 Agent 控制台",
+                "RD_AGENT_CONSOLE "));
         }
 
         tab.IsActive = true;
@@ -923,6 +947,25 @@ public sealed class RoadProtoRibbonExtension : IExtensionApplication
         };
     }
 
+    private static RibbonButton CreateAgentCommandButton(string id, string text, string toolTip, string command)
+    {
+        var icon = CreateAgentIcon();
+        return new RibbonButton
+        {
+            Id = id,
+            Text = text,
+            ShowText = true,
+            ShowImage = true,
+            Image = icon,
+            LargeImage = icon,
+            Size = RibbonItemSize.Standard,
+            Orientation = Orientation.Horizontal,
+            ToolTip = toolTip,
+            CommandParameter = command,
+            CommandHandler = new OpenAgentConsoleCommandHandler(),
+        };
+    }
+
     private static ImageSource CreateTerrainIcon()
     {
         var drawingGroup = new DrawingGroup();
@@ -1047,6 +1090,28 @@ public sealed class RoadProtoRibbonExtension : IExtensionApplication
         return new DrawingImage(drawingGroup);
     }
 
+    private static ImageSource CreateAgentIcon()
+    {
+        var drawingGroup = new DrawingGroup();
+        var shellPen = new Pen(new SolidColorBrush(Color.FromRgb(55, 65, 81)), 1.2);
+        var accentPen = new Pen(new SolidColorBrush(Color.FromRgb(28, 115, 220)), 1.8);
+
+        drawingGroup.Children.Add(new GeometryDrawing(
+            new SolidColorBrush(Color.FromRgb(248, 250, 252)),
+            shellPen,
+            Geometry.Parse("M 5,5 L 19,5 L 22,9 L 22,19 L 5,19 Z")));
+        drawingGroup.Children.Add(new GeometryDrawing(
+            null,
+            accentPen,
+            Geometry.Parse("M 8,10 L 14,10 M 8,14 L 18,14")));
+        drawingGroup.Children.Add(new GeometryDrawing(
+            new SolidColorBrush(Color.FromRgb(52, 174, 91)),
+            null,
+            Geometry.Parse("M 17,4 L 20,7 L 17,10 L 14,7 Z")));
+        drawingGroup.Freeze();
+        return new DrawingImage(drawingGroup);
+    }
+
     private sealed class SendCommandHandler : ICommand
     {
         public event EventHandler? CanExecuteChanged
@@ -1079,6 +1144,29 @@ public sealed class RoadProtoRibbonExtension : IExtensionApplication
 
             var commandParameter = parameter?.GetType().GetProperty("CommandParameter");
             return commandParameter?.GetValue(parameter) as string;
+        }
+    }
+
+    private sealed class OpenAgentConsoleCommandHandler : ICommand
+    {
+        public event EventHandler? CanExecuteChanged
+        {
+            add { }
+            remove { }
+        }
+
+        public bool CanExecute(object? parameter) => true;
+
+        public void Execute(object? parameter)
+        {
+            try
+            {
+                new RoadProto.Terrain.UI.Agent.AgentConsoleCommands().ShowAgentConsole();
+            }
+            catch (System.Exception error)
+            {
+                WriteEditorMessage($"\nRoadProto Agent 控制台打开失败: {error.Message}");
+            }
         }
     }
 }

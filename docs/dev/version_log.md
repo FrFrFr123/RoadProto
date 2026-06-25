@@ -1,5 +1,54 @@
 # 版本记录
 
+## v0.1.35_20260624_AgentMvp
+
+- 阶段：可控工程 Agent MVP。
+- ARX 文件名规则：`RoadProto_v0.1.35_<构建时间戳>_AgentMvp.arx`。
+- 本次 Debug 验证生成：`artifacts/x64/Debug/RoadProto_v0.1.35_20260624_212013075_AgentMvp.arx`。
+- 本次 Debug 托管插件：`artifacts/managed/Debug/net48/RoadProto.Terrain.UI.dll`。
+- 修改内容：
+  - 新增 `docs/agent/` 独立文档区，明确 Agent MVP 采用独立后端仓库、RoadProto 本地 `AGENT` 薄模块和 WPF 可停靠 Agent Console。
+  - 新增独立 Agent 后端服务契约、WPF 可停靠 Agent Console 交互规范、目录与配置分区、路基模板创建 Agent 验证说明。
+  - 新增 `docs/business/agent/` 下的 Agent 控制台业务文档和路基模板创建 Agent MVP 验证业务文档。
+  - 新增 `docs/modules/agent.md` 和 `docs/reuse/engineering_agent_mvp.md`，并同步模块索引、命令前缀规则、架构说明、推荐目录结构、README 和复用能力目录。
+  - 明确 MVP 中路基模板只是首个验证业务 Agent，Agent 底座不隶属于横断面模块；MVP 不建设独立 Web 前端，所有用户交互进入 AutoCAD 内 WPF 可停靠面板。
+  - 2026-06-24 补充：根据确认意见修正文档口径，后端固定为独立仓库 `F:\0_GPT_RoadProtoAgentBackend`，技术栈为 `.NET 8 / ASP.NET Core`；RoadProto `AGENT` 模块固定为薄模块，只做 WPF 可停靠面板、HTTP 通信、后端自动启动和本地 Bridge / Adapter。
+  - 2026-06-24 补充：WPF Agent Console 明确采用 AutoCAD 可停靠 Palette / 面板，不使用独立 Web 前端或 WebView；交互参考 `E:\Download\google\道路设计软件对话框.zip` 的侧边栏、聊天流、thinking、设置页和模型配置结构。
+  - 2026-06-24 补充：MVP 支持 DeepSeek、阿里千问、GLM、GPT；API Key 由后端保存到 `%APPDATA%\RoadProtoAgent\settings.json` 并使用 Windows DPAPI 加密。
+  - 2026-06-24 补充：面板打开时检查 `http://127.0.0.1:17861/health`，后端不可用时自动启动 `F:\0_GPT_RoadProtoAgentBackend\artifacts\publish\RoadProtoAgentBackend.exe`；MVP 暂不安装 Windows Service。
+  - 2026-06-24 补充：全流程要求打印并记录流转日志，后端和 RoadProto 本地日志分别位于 `F:\0_GPT_RoadProtoAgentRuntime\logs\backend\` 与 `F:\0_GPT_RoadProtoAgentRuntime\logs\roadproto\`，默认保留最近 14 天或最多 1GB。
+  - 新增独立后端仓库 `F:\0_GPT_RoadProtoAgentBackend`，实现 `.NET 8 / ASP.NET Core` 健康检查、模型 Provider 设置、DPAPI API Key 加密、JSON Lines 流转日志、14 天 / 1GB 日志保留、Agent Run 状态机、确认后工具下发和工具结果回传。
+  - RoadProto 新增 `AGENT` 模块，注册 `RD_AGENT_CONSOLE`、`RD_AGENT_HEALTH`、`RD_AGENT_LOGS`，并在托管 Ribbon 中新增 `Agent 控制台` 入口。
+  - WPF 新增可停靠 `AgentConsolePalette`，支持后端自动启动、DeepSeek / Qwen / GLM / GPT 配置保存、自然语言提交、用户确认、本地工具桥接、TraceId 和流转日志查看。
+  - 路基模板创建验证链路复用既有 `SubgradeTemplateDialogFile` / `RD_SECTION_SUBGRADE_TEMPLATE_APPLY_DIALOG_FILE` 桥接协议，确认后由 C++ ObjectARX Adapter 创建 `DnSubgradeTemplateEntity`，并通过结果文件回传后端 `/tool-result`。
+  - 2026-06-24 补充：Agent 流程收敛为 `Agent -> Skill -> Intent -> Schema -> Rule -> Tool -> Adapter -> Execution -> Trace`，首个验证 Skill 为 `subgrade_template`，覆盖创建、修改、删除、查询四类 Intent。
+  - 2026-06-24 补充：后端新增 YAML Skill / Intent 规则仓库、模型结构化提取、追问续跑、规则阻断、审批流转和全阶段 Trace；发布包会携带 `rules/skills` 与 `rules/intents`。
+  - 2026-06-24 补充：WPF Agent Console 支持 `AwaitingUserInput` 追问输入、当前 Skill / Intent 展示和 CRUD 工具下发；本地 Bridge 新增 `RD_AGENT_SUBGRADE_TEMPLATE_TOOL_FILE`，作为路基模板修改、删除、查询的原生工具入口。
+  - 2026-06-24 补充：新增 `docs/business/agent/路基模板Skill_增删改查_MVP.md`，并同步 `docs/agent/README.md`、`docs/modules/agent.md` 和 `docs/reuse/engineering_agent_mvp.md` 中的 Skill/Intent 控制口径。
+  - 2026-06-24 补充：运行期日志从原 C 盘用户配置日志目录迁移到 `F:\0_GPT_RoadProtoAgentRuntime\logs\`；`settings.json` 仍保留在 `%APPDATA%\RoadProtoAgent\settings.json`，避免 API Key 配置随日志迁移丢失。
+  - 2026-06-24 补充：后端 `AgentRunService` 改为接入模型版 `SubgradeTemplateAgent`，运行时从已启用且有 API Key 的 Provider 中选择模型，优先级为 DeepSeek、Qwen、GLM、GPT；未配置时返回失败 Run 和明确提示，不再让 WPF 收到 500。
+  - 2026-06-24 补充：`AgentRun` 增加 run 级 `followUpMessage`，后端在 `AwaitingUserInput` 时把规则层具体追问返回给 WPF；Agent Console 优先展示该字段，避免缺少道路等级时只显示“请补充必要信息。”的兜底文案。
+  - 2026-06-24 补充：新增 `docs/agent_builder/` 跨项目可复用 Agent 搭建能力文档区，归档用户初始 12 层 MVP 模板，并融合 RoadProto 实践形成可复用原则、MVP 架构、十二层模块、入口路由、Skill / Intent / Tool 编写方法、维护规则、实践记录和模板文件。
+  - 2026-06-24 补充：后端新增入口路由层 `EntryRouted`，在模型意图识别前自主区分 `ChatOnly`、`HelpOnly`、`WorkflowCandidate` 和 `WorkflowCommand`；闲聊/咨询不调用 Tool，动作不完整时追问，明确工程指令才进入 Skill / Intent 识别。WPF DTO 和面板同步展示 `entryRoute`。
+  - 2026-06-24 补充：后端新增受控对话通道，`ChatOnly` 和 `HelpOnly` 不再使用固定话术兜底，而是在禁止 Tool、禁止 CAD 写入和禁止声称已执行的系统约束下调用已配置模型自然回答；工程执行仍只允许 `WorkflowCommand` 进入 Skill / Intent / Tool 链路。
+  - 2026-06-25 补充：受控对话新增运行时事实层，日期、时间、当前 Provider、当前模型名和 Agent 身份由后端确定性回答并记录 `RuntimeFactsAnswered`；普通闲聊和咨询调用模型时同步注入这些事实，禁止模型猜测日期、模型底层架构或未提供的 RoadProto 内部信息。
+  - 2026-06-25 补充：WPF Agent Console 可见流转日志新增中文可读映射，`EntryRouted`、`RunUpdated`、`RuntimeFactsAnswered`、`ConversationModelRequested` 等内部阶段不再直接作为主文案显示；原始 stage / message 仍写入文件日志用于排查。
+  - 2026-06-25 补充：入口路由显式把 `道路模型` 识别为独立 `road_model` 候选，当前 MVP 未接入该 Skill 时只提示尚未接入，不调用 `subgrade_template` Tool；对象未定的多轮补充会重新入口路由，避免“我想创建 -> 道路模型”误进入路基模板。
+  - 2026-06-25 补充：路基模板创建默认值改由后端规则文件 `F:\0_GPT_RoadProtoAgentBackend\rules\intents\subgrade_template.create.yaml` 的 `defaultSource: agent-rule` / `defaultValue` 控制；RoadProto 本地 Bridge 不再补默认宽度、坡率和单位，只做执行前校验。
+  - 2026-06-25 补充：路基模板创建默认值升级为组件级规则。`subgrade_template.create.yaml` 新增 `defaultComponentsByRoadGrade`，高速公路默认下发与 RoadProto 原生“路基模板-高速公路”一致的 8 个完整部件；RoadProto 本地 Bridge 反序列化 `Components` 并写入 `SubgradeComponentDto`，不再用 `laneWidth`、`hardShoulderWidth`、`earthShoulderWidth`、`medianWidth` 或 `slopeRatio` 本地拼默认模板。
+  - 2026-06-25 补充：后端规则层新增道路等级归一化，将“高速公路”等中文模型输出统一转成 `Expressway` 等 RoadProto 稳定枚举编码后再下发本地 Tool。
+  - 2026-06-25 补充：修复未接入 `road_model` 返回后卡在 `AwaitingUserInput` 的问题，明确未接入对象返回 `UnsupportedWorkflow` 终止性结果；后续输入会作为新任务重新路由。
+  - 2026-06-25 补充：WPF 聊天区新增 Skill / Intent / 风险等级 / Tool 名称翻译，不再直接显示 `subgrade_template`、`subgrade_template.create`、`medium`、`SubgradeTemplate.Create` 等机器码；流转日志补充 `UnsupportedWorkflow` 和 `AwaitingUserInput` 的中文可读映射。
+  - 2026-06-25 补充：修复 `AwaitingUserInput` 状态无条件粘连旧任务的问题。当前 Run 等待补充时，若用户新输入明确是闲聊、咨询、运行时事实问题、未接入对象或新的完整工程指令，后端记录 `ContinuationRerouted` 并重新入口路由；“修改模板缺目标 -> 你好”不再循环追问模板目标，“路基模板 -> 今天是几号”会跳出并由运行时事实层回答，“路基模板 -> 创建”这类动作补充仍继续原任务。
+  - 2026-06-25 补充：同步更新 `docs/agent/`、`docs/business/agent/` 与 `docs/agent_builder/`，明确道路模型边界、默认值所有权和可读流转日志规则。
+  - 2026-06-25 补充：Agent Console 优化模型配置恢复、输入体验、确认交互和可观测性。WPF 打开时从后端 `/api/settings/models` 读取上次保存的 Provider / Base URL / 模型名 / 启用状态；输入框支持 Enter 发送、发送后清空并保持焦点；聊天区和流转日志区支持自动换行与局部复制；确认 / 取消按钮移入对话区域，不再固定放在发送按钮旁边；WPF DTO 消费后端 `AgentRun.events` 并按事件增量显示每个流程阶段及阶段输出。
+  - 2026-06-25 补充：后端 `AgentRunService` 增加 `PlanOutput` 和 `ToolArgumentsPrepared` 等详细事件，记录意图结果、规则结果、Tool 计划、工具参数摘要和确认后的调度参数；文件 Trace 保留原始 stage / message，WPF 使用中文可读映射展示。
+  - 2026-06-25 补充：修复 Agent Console 点击打开可能导致 AutoCAD Palette 宿主崩溃的风险点。托管 Palette 不再设置 `KeepFocus`，不再在面板加载或 `GotKeyboardFocus` 中同步强制输入框焦点；仅在用户点击输入框、发送完成或取消完成后异步恢复焦点。Agent Console 初始尺寸调整为 `560x720`，最小尺寸 `480x560`，默认右侧停靠，并启用公开的 `DockEnabled = Right` / `Dock = Right` / `Snappable` / `SingleColDock`。
+  - 2026-06-25 补充：进一步降低 Agent Console 在 AutoCAD Palette 中的焦点重入风险。聊天区和流转日志区不再使用 `ListBox.ItemTemplate` 为每行嵌套可聚焦 `TextBox`，改为单体只读多行文本面板绑定 `MessagesText` / `LogText`，保留自动换行和局部复制能力。
+  - 2026-06-25 补充：定位并修复 AutoCAD 2021 中点击 Ribbon 打开 Agent Console 仍可能崩溃的问题。实测 `ElementHost` 加入 Palette 会卡死，完整 WPF 控件直接传给 `AddVisual` 也不稳定；最终改为先用 `PaletteSet.AddVisual("Agent", emptyGrid, false)` 注册空 WPF 宿主，再把完整 `AgentConsolePalette` 加入该宿主。主目录最新 ARX 在 AutoCAD 2021 中通过自动化 Ribbon 鼠标点击验证，探针完整到 `After Activate`。
+- 验证状态：后端 `dotnet test` 通过 56/56；后端 Release 发布生成 `F:\0_GPT_RoadProtoAgentBackend\artifacts\publish\RoadProtoAgentBackend.exe`，发布包已包含 `defaultComponentsByRoadGrade` 组件级 YAML 规则；发布 exe 的 `/health` 返回 `healthy`，日志目录为 `F:\0_GPT_RoadProtoAgentRuntime\logs\backend` 和 `F:\0_GPT_RoadProtoAgentRuntime\logs\roadproto`；发布规则检查确认高速公路左右行车道均为 `7.5`、右侧土路肩坡度为 `-0.03`、中分带外侧路缘石为 `0.15 / 0.15 / 0.15`；RoadProto 托管 Bridge 测试通过；RoadProto 核心测试 Release 通过；`RoadProto.sln` Release 构建通过，生成 `artifacts/x64/Release/RoadProto_v0.1.35_20260625_152226534_AgentMvp.arx` 和 `artifacts/managed/Release/net48/RoadProto.Terrain.UI.dll`；AutoCAD 2021 已验证命令路径 `RD_AGENT_CONSOLE` 和 Ribbon 真实点击均能打开并激活右侧 Agent Palette。路基模板完整 Agent 执行链路仍需继续联调。
+- 是否可作为稳定测试版本：否。当前为 Agent MVP 骨架和路基模板验证链路，AutoCAD 图形界面完整点验仍待执行。
+
 ## v0.1.34_20260624_PrototypeCleanup
 
 - 阶段：旧实验原型清理与 Release 产物更新。

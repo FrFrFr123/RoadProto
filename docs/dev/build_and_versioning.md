@@ -57,8 +57,8 @@ RoadProto_版本号_构建时间戳_阶段.arx
 示例：
 
 ```text
-RoadProto_v0.1.34_20260624_113012123_PrototypeCleanup.arx
-RoadProto_v0.1.34_20260624_113215456_PrototypeCleanup.arx
+RoadProto_v0.1.35_20260624_113012123_AgentMvp.arx
+RoadProto_v0.1.35_20260624_113215456_AgentMvp.arx
 RoadProto_v0.2.0_20260624_113450789_CadAdapter.arx
 ```
 

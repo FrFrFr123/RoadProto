@@ -26,6 +26,9 @@ struct SubgradeTemplateDialogResponse {
     SubgradeTemplateDialogAction action = SubgradeTemplateDialogAction::None;
     int pickComponentIndex = -1;
     bool accepted = false;
+    std::wstring agentTraceId;
+    std::wstring agentTaskId;
+    std::wstring agentResultPath;
     std::wstring handle;
     AcGePoint3d insertionPoint;
     roadproto::domain::cross_section::SubgradeTemplateData data;

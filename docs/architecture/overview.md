@@ -32,6 +32,21 @@ RoadProto 的道路设计原型功能采用“C++ ObjectARX 核心 + 可替换 U
 
 地形 TIN 的业务逻辑、CAD 功能逻辑和代码结构索引见 `docs/architecture/terrain_tin_code_structure.md`。后续维护地形模块时，应优先保持该文档中的边界：`domain` 沉淀算法和数据，`cad_adapter` 处理 ObjectARX 交互，`ui` 只做可替换入口和交互转发。
 
+## 可控工程 Agent 扩展原则
+
+RoadProto 后续的可控工程 Agent 采用“独立 Agent 后端仓库 + RoadProto 本地 `AGENT` 薄模块 + WPF 可停靠 Agent Console”的扩展方式。
+
+- 独立 Agent 后端仓库固定规划为 `F:\0_GPT_RoadProtoAgentBackend`，使用 `.NET 8 / ASP.NET Core`。
+- 独立 Agent 后端服务负责 Agent 配置、模型网关、主状态机、Schema 校验、规则引擎、Tool Registry、Credential、Trace、日志和评测治理。
+- RoadProto 内部新增独立 `AGENT` 薄模块，负责 WPF 入口、后端健康检查和自动启动、HTTP 通信、本地上下文摘要、受控工具适配、DryRun、审批后的执行桥接和本地 Trace 镜像。
+- WPF 以 AutoCAD 可停靠 Palette / 面板呈现，只负责输入、展示、模型设置、参数修改、审批、流转日志和 Trace 查看，不直接调用模型 API，也不直接操作 ObjectARX 实体。
+- MVP 不新增独立 Web 前端，不嵌入 WebView。
+- 独立后端不能直接修改 DWG。所有 CAD 写入必须通过 RoadProto 本地 `AGENT` 模块，再进入既有 application / domain / cad_adapter 分层。
+- 首个 MVP 验证业务 Agent 为路基模板创建，但 Agent 架构不隶属于横断面模块。
+- 每次 Agent 任务必须带 `TraceId` / `SessionId` / `TaskId`，并记录后端与 RoadProto 本地流转日志。日志默认保留最近 14 天，或总量最多 1GB。
+
+Agent 文档区见 `docs/agent/README.md`。
+
 ## 运行流程
 
 1. AutoCAD 加载 `RoadProto_v0.1.6_20260508_TerrainTinDblClick.arx`。

@@ -30,6 +30,7 @@
 | 实体依赖、联动更新、脏标记、重建请求 | `docs/architecture/entity_relation_update.md` |
 | 新增或修改业务命令 | `docs/business/业务文档模板.md`，以及对应模块下的业务文档 |
 | 新增或沉淀复用能力 | `docs/reuse/_template.md` 和 `docs/reuse/capability_catalog.md` |
+| 可控工程 Agent 架构、入口路由、Skill、Intent、Tool、Trace 或可复用搭建方法 | `docs/agent/README.md`、`docs/agent_builder/README.md`、`docs/agent_builder/maintenance_policy.md` |
 | 模块说明、模块清单、模块职责 | `docs/modules/module_index.md` 和对应模块文档 |
 | 版本号、ARX 命名、输出目录 | `docs/dev/build_and_versioning.md` |
 | 版本记录 | `docs/dev/version_log.md` |
@@ -73,6 +74,7 @@
 - `docs/business/`
 - `docs/modules/`
 - `docs/reuse/`
+- `docs/agent_builder/`
 - `docs/dev/`
 - `docs/architecture/`
 - `docs/rules/`
@@ -117,7 +119,19 @@
 - 每个独立功能必须有且只有一份对应业务文档，不得把多个功能长期混写在同一份业务文档中；模块总览文档只能做索引和边界说明。
 - 每个原型命令必须指向对应功能的业务文档；内部 Bridge / handle 命令也要有对应功能或桥接说明文档。
 - 每个可复用能力都要沉淀到复用说明。
+- 每次 Agent 相关修改都必须检查并同步 `docs/agent_builder/`，把可跨项目复用的经验、规则和模板沉淀到 `docs/agent_builder/maintenance_policy.md` 指定的文档中。
 - 生成或调整 ARX 版本时，必须更新版本记录。
+
+## Agent Builder 可复用文档同步规则
+
+`docs/agent_builder/` 是跨项目可复用的 Agent 搭建能力文档区，不绑定 RoadProto 当前实现。凡是修改 Agent 架构、入口路由、模型网关、Skill、Intent、Schema、Rule、Tool、Adapter、DryRun、审批、Trace、日志、评测或安全策略，都必须同步检查该目录。
+
+同步原则：
+
+- `docs/agent/` 写 RoadProto 当前项目怎么做。
+- `docs/agent_builder/` 写下一个项目也能复用的方法、模板和实践结论。
+- `docs/agent_builder/original_mvp_template/` 是用户最初提供的模板归档，原则上不持续编辑；新结论应融合到 `docs/agent_builder/` 的维护版文档。
+- 收尾前按 `docs/agent_builder/maintenance_policy.md` 的清单检查是否需要更新。
 
 ## 核心架构原则
 
