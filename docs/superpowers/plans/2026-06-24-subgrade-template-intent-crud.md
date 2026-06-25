@@ -63,7 +63,7 @@ $OutputEncoding = [System.Text.UTF8Encoding]::new($false)
 ```
 
 - 后端代码修改发生在 `F:\0_GPT_RoadProtoAgentBackend`。
-- RoadProto 代码和文档修改发生在 `F:\0_GPT_道路设计原型功能项目` 或其 worktree；收尾前必须同步回主项目目录。
+- RoadProto 代码和文档修改发生在 `F:\0_GPT_道路设计原型功能项目` 或其 worktree；如果在 worktree 执行，默认保持 worktree 目录和对应分支隔离，只有用户明确确认合入或需要主项目目录可见副本时，才按 `AGENTS.md` 执行合入或同步。
 - 每个任务完成后运行该任务列出的测试命令。只有用户明确要求提交时，才执行计划中的提交检查点命令。
 
 ---
@@ -2783,17 +2783,21 @@ Expected:
 - 查询直接返回摘要，不要求审批。
 - 删除进入高风险确认。
 
-- [ ] **Step 8: worktree 同步**
+- [ ] **Step 8: worktree 收口确认**
 
-If implementation was done in a worktree, sync formal files back to main:
+如果本计划在 worktree 中执行，先确认当前状态，不自动把正式文件同步回主项目目录。只有用户明确确认合入或需要主项目目录可见副本时，才按 `AGENTS.md` 执行 Git 合入、快进、挑拣提交或指定范围同步。
 
 ```powershell
-robocopy <worktree>\docs F:\0_GPT_道路设计原型功能项目\docs /E /XD .git .vs .worktrees bin obj artifacts
-robocopy <worktree>\src F:\0_GPT_道路设计原型功能项目\src /E /XD .git .vs .worktrees bin obj
-robocopy <worktree>\tests F:\0_GPT_道路设计原型功能项目\tests /E /XD bin obj
+git -C <worktree> status --short
+git -C <worktree> branch --show-current
+git -C F:\0_GPT_道路设计原型功能项目 status --short
 ```
 
-Expected: main project contains the latest docs, source and tests.
+Expected:
+
+- worktree 分支包含本任务修改。
+- 主项目目录未被自动覆盖。
+- 是否合入或同步由用户明确确认。
 
 提交检查点命令：
 

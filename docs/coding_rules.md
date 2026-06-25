@@ -37,11 +37,13 @@
 
 每个生成的 ARX 版本都要记录到 `docs/dev/version_log.md`。
 
-使用 `.worktrees/<分支名>` 开发时，主项目目录必须同步保留最新文档和所有代码：在 worktree 内保存正式代码或文档后，收尾前必须按相同相对路径同步到主项目目录 `F:\0_GPT_道路设计原型功能项目`。这条规则适用于 `AGENTS.md`、`README.md`、`.gitignore`、`RoadProto.sln`、`build/`、`src/`、`tests/`、`third_party/`、`assets/`、`docs/`、`samples/` 和用户明确要求可见的说明文档或代码文件。
+本地目录概念和 Git 分支概念必须区分：主项目目录是 `F:\0_GPT_道路设计原型功能项目`，worktree 目录是 `.worktrees/<分支名>`；`main` 是 Git 主线分支，worktree 分支 / 功能分支是 Git 隔离开发分支。
 
-不同步 `.git/`、`.vs/`、`.worktrees/`、`bin/`、`obj/`、构建缓存和本机私有配置；`artifacts/` 只按构建产物同步规则复制可加载 ARX / DLL / PDB。
+使用 `.worktrees/<分支名>` 开发时，worktree 目录就是该任务的隔离工作区。正式代码和文档默认只在该 worktree 目录中修改，并提交、推送到对应 worktree 分支。禁止在 worktree 任务收尾时自动同步回主项目目录，避免多个并行任务互相覆盖主目录状态。
 
-Worktree 内提交并推送的版本仍作为正式 Git 留档；主项目目录必须保留同路径、内容一致的最新副本，方便用户直接查看、加载和继续开发。若用户要求后续基于主目录更新，必须先把 worktree 最新文档和所有代码同步回主目录，再继续开发。
+只有在用户明确确认某个 worktree 成果已经完成、需要合入或需要主项目目录可见副本时，才通过 Git 合并、快进、挑拣提交，或按用户指定范围同步到主项目目录。确认合入或同步时，可纳入 `AGENTS.md`、`README.md`、`.gitignore`、`RoadProto.sln`、`build/`、`src/`、`tests/`、`third_party/`、`assets/`、`docs/`、`samples/` 和用户明确要求可见的说明文档或代码文件。
+
+不合入或同步 `.git/`、`.vs/`、`.worktrees/`、`bin/`、`obj/`、构建缓存和本机私有配置；`artifacts/` 只有在用户明确要求主项目目录可直接加载、调试或分发时，才按构建产物同步规则复制可加载 ARX / DLL / PDB。
 
 ## 测试规则
 

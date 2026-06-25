@@ -2674,29 +2674,19 @@ git add docs/dev/version_log.md
 git commit -m "docs: record road model build validation"
 ```
 
-- [ ] **Step 7: Main-directory sync**
+- [ ] **Step 7: worktree 收口确认**
 
-This work is currently planned in the main project directory `F:\0_GPT_道路设计原型功能项目`. If implementation is executed in a `.worktrees/<branch>` directory, sync the source/document scope back to the main directory before final response:
-
-```powershell
-robocopy <worktree>\src F:\0_GPT_道路设计原型功能项目\src /MIR /XD bin obj
-robocopy <worktree>\tests F:\0_GPT_道路设计原型功能项目\tests /MIR /XD bin obj
-robocopy <worktree>\docs F:\0_GPT_道路设计原型功能项目\docs /MIR
-robocopy <worktree>\build F:\0_GPT_道路设计原型功能项目\build /MIR
-robocopy <worktree>\assets F:\0_GPT_道路设计原型功能项目\assets /MIR
-robocopy <worktree>\third_party F:\0_GPT_道路设计原型功能项目\third_party /MIR
-copy <worktree>\README.md F:\0_GPT_道路设计原型功能项目\README.md
-copy <worktree>\RoadProto.sln F:\0_GPT_道路设计原型功能项目\RoadProto.sln
-```
-
-If build artifacts are produced in a worktree and the user needs main-directory load paths, also sync:
+本计划原先按主项目目录 `F:\0_GPT_道路设计原型功能项目` 编写。若实际在 `.worktrees/<branch>` 目录执行，默认保持 worktree 目录和对应分支隔离，不在最终回复前自动同步回主项目目录。先确认当前状态：
 
 ```powershell
-robocopy <worktree>\artifacts\x64\Debug F:\0_GPT_道路设计原型功能项目\artifacts\x64\Debug RoadProto_v0.1.11_20260518_RoadModel.arx *.pdb
-robocopy <worktree>\artifacts\x64\Release F:\0_GPT_道路设计原型功能项目\artifacts\x64\Release RoadProto_v0.1.11_20260518_RoadModel.arx *.pdb
-robocopy <worktree>\artifacts\managed\Debug\net48 F:\0_GPT_道路设计原型功能项目\artifacts\managed\Debug\net48 RoadProto.Terrain.UI.dll *.pdb
-robocopy <worktree>\artifacts\managed\Release\net48 F:\0_GPT_道路设计原型功能项目\artifacts\managed\Release\net48 RoadProto.Terrain.UI.dll *.pdb
+git -C <worktree> status --short
+git -C <worktree> branch --show-current
+git -C F:\0_GPT_道路设计原型功能项目 status --short
 ```
+
+只有用户明确确认合入或需要主项目目录可见副本时，才按 `AGENTS.md` 执行 Git 合入、快进、挑拣提交或指定范围同步。若 worktree 中生成了构建产物，也只有用户明确需要主项目目录加载、调试或分发路径时，才按 `AGENTS.md` 的构建产物同步规则复制 ARX / DLL / PDB。
+
+预期结果：worktree 分支保留本任务修改，主项目目录未被自动覆盖，是否合入或同步由用户明确确认。
 
 - [ ] **Step 8: Final status**
 
