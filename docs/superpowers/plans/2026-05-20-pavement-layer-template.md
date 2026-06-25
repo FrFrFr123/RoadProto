@@ -1075,12 +1075,17 @@ Expected:
 - Road model generation draws pavement layer wireframes.
 - View section shows pavement layer lines.
 
-- [ ] **Step 6: Sync worktree outputs if applicable and final commit**
+- [ ] **Step 6: 确认 worktree 收口并提交最终修正**
 
-If the implementation ran in `.worktrees/<branch>`, sync source/docs back to `F:\0_GPT_道路设计原型功能项目` according to `AGENTS.md`. If Release artifacts were built in a worktree, copy:
+如果实现发生在 `.worktrees/<branch>` 中，默认保持 worktree 目录和对应分支隔离。不要自动把源码、文档或构建产物复制回 `F:\0_GPT_道路设计原型功能项目`。先确认当前状态：
 
-- `.worktrees/<branch>/artifacts/x64/Release/*` to `F:\0_GPT_道路设计原型功能项目\artifacts\x64\Release\`
-- `.worktrees/<branch>/artifacts/managed/Release/net48/*` to `F:\0_GPT_道路设计原型功能项目\artifacts\managed\Release\net48\`
+```powershell
+git -C <worktree> status --short
+git -C <worktree> branch --show-current
+git -C F:\0_GPT_道路设计原型功能项目 status --short
+```
+
+只有用户明确确认合入或需要主项目目录可见副本时，才按 `AGENTS.md` 执行 Git 合并、快进、挑拣提交或指定范围同步。Release 构建产物也只有在用户明确需要主项目目录加载、调试或分发路径时才复制。
 
 Commit any final fixes:
 

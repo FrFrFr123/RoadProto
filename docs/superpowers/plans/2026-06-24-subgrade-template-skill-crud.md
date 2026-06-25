@@ -761,7 +761,7 @@ Expected: only historical note lines remain, and those lines explicitly say the 
 
 ---
 
-## Task 9: 全量验证、发布和主目录同步
+## Task 9: 全量验证、发布和 worktree 收口确认
 
 - [ ] **Step 1: 后端全量测试**
 
@@ -808,21 +808,17 @@ Stop-Process -Id $process.Id
 
 Expected: `status` is `ok`.
 
-- [ ] **Step 6: 同步 worktree 到主目录**
+- [ ] **Step 6: worktree 收口确认**
 
-Sync formal RoadProto docs/source/tests from:
+如果本计划在 worktree 中执行，默认保持 worktree 目录和对应分支隔离，不自动同步回主项目目录。先确认当前状态：
 
-```text
-F:\0_GPT_道路设计原型功能项目\.worktrees\codex-agent-mvp
+```powershell
+git -C F:\0_GPT_道路设计原型功能项目\.worktrees\codex-agent-mvp status --short
+git -C F:\0_GPT_道路设计原型功能项目\.worktrees\codex-agent-mvp branch --show-current
+git -C F:\0_GPT_道路设计原型功能项目 status --short
 ```
 
-to:
-
-```text
-F:\0_GPT_道路设计原型功能项目
-```
-
-Exclude `.git`、`.vs`、`.worktrees`、`bin`、`obj`、temporary caches. If artifacts are built and user needs direct loading, also sync ARX/DLL/PDB according to `AGENTS.md`.
+只有用户明确确认合入或需要主项目目录可见副本时，才按 `AGENTS.md` 执行 Git 合入、快进、挑拣提交或指定范围同步。若构建了 artifacts，也只有用户明确需要主项目目录直接加载、调试或分发时，才按 `AGENTS.md` 复制 ARX / DLL / PDB。
 
 ---
 

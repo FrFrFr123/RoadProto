@@ -25,7 +25,7 @@ Implement in this order:
 9. Business, reuse, module, version, README, and test documentation.
 10. Full build/test/manual verification notes.
 
-The implementation should happen in `F:\0_GPT_道路设计原型功能项目\.worktrees\profile-grade-graph` on branch `codex/profile-grade-graph`. Because this is a worktree, every changed documentation file under `docs/`, `README.md`, and `tests/README.md` must be mirrored to the same relative path in `F:\0_GPT_道路设计原型功能项目` before finish.
+实现应发生在 `F:\0_GPT_道路设计原型功能项目\.worktrees\profile-grade-graph`，对应分支为 `codex/profile-grade-graph`。因为这是 worktree，默认保持 worktree 目录和对应分支隔离；除非用户明确确认合入或需要主项目目录可见副本，否则不要在收尾前把已修改文档镜像回 `F:\0_GPT_道路设计原型功能项目`。
 
 ## File Structure
 
@@ -2598,22 +2598,17 @@ Update `docs/reuse/capability_catalog.md` with rows:
 
 After Task 10 verification succeeds, update `docs/dev/version_log.md`, `tests/README.md`, and `README.md` with exact version/build status from that run. Use current RoadProto naming rules in `build/RoadProto.Build.props`.
 
-- [ ] **Step 6: Mirror docs to main project directory**
+- [ ] **Step 6: 确认 worktree 文档收口**
 
-For every doc changed in this task, run:
+本任务修改的每个文档都以 worktree 中的副本作为该分支内容来源。不要自动复制回主项目目录，改为先确认状态：
 
 ```powershell
-Copy-Item -LiteralPath ".worktrees\profile-grade-graph\docs\business\profile\竖曲线_创建.md" -Destination "docs\business\profile\竖曲线_创建.md" -Force
-Copy-Item -LiteralPath ".worktrees\profile-grade-graph\docs\business\profile\竖曲线_编辑.md" -Destination "docs\business\profile\竖曲线_编辑.md" -Force
-Copy-Item -LiteralPath ".worktrees\profile-grade-graph\docs\business\profile\竖曲线_夹点与右键编辑.md" -Destination "docs\business\profile\竖曲线_夹点与右键编辑.md" -Force
-Copy-Item -LiteralPath ".worktrees\profile-grade-graph\docs\reuse\profile_vertical_curve.md" -Destination "docs\reuse\profile_vertical_curve.md" -Force
-Copy-Item -LiteralPath ".worktrees\profile-grade-graph\docs\modules\profile.md" -Destination "docs\modules\profile.md" -Force
-Copy-Item -LiteralPath ".worktrees\profile-grade-graph\docs\modules\module_index.md" -Destination "docs\modules\module_index.md" -Force
-Copy-Item -LiteralPath ".worktrees\profile-grade-graph\docs\reuse\capability_catalog.md" -Destination "docs\reuse\capability_catalog.md" -Force
-Copy-Item -LiteralPath ".worktrees\profile-grade-graph\docs\dev\version_log.md" -Destination "docs\dev\version_log.md" -Force
-Copy-Item -LiteralPath ".worktrees\profile-grade-graph\tests\README.md" -Destination "tests\README.md" -Force
-Copy-Item -LiteralPath ".worktrees\profile-grade-graph\README.md" -Destination "README.md" -Force
+git -C F:\0_GPT_道路设计原型功能项目\.worktrees\profile-grade-graph status --short
+git -C F:\0_GPT_道路设计原型功能项目\.worktrees\profile-grade-graph branch --show-current
+git -C F:\0_GPT_道路设计原型功能项目 status --short
 ```
+
+只有用户明确确认合入或需要主项目目录可见副本时，才按 `AGENTS.md` 执行 Git 合并、快进、挑拣提交或指定范围同步。
 
 - [ ] **Step 7: Commit Task 9**
 
@@ -2715,15 +2710,16 @@ Get-CimInstance Win32_Process -Filter "name='acad.exe' or name='accoreconsole.ex
 
 Expected: no unexpected hidden `acad.exe` or `accoreconsole.exe` remains after closing AutoCAD. Record any remaining process in the final notes.
 
-- [ ] **Step 8: Verify doc mirror**
+- [ ] **Step 8: 验证 worktree 隔离状态**
 
-Run from main project directory:
+在主项目目录运行：
 
 ```powershell
-Compare-Object -ReferenceObject (Get-Content -Encoding UTF8 -LiteralPath ".worktrees\profile-grade-graph\docs\superpowers\plans\2026-05-12-profile-vertical-curve.md") -DifferenceObject (Get-Content -Encoding UTF8 -LiteralPath "docs\superpowers\plans\2026-05-12-profile-vertical-curve.md")
+git -C F:\0_GPT_道路设计原型功能项目\.worktrees\profile-grade-graph status --short
+git -C F:\0_GPT_道路设计原型功能项目 status --short
 ```
 
-Expected: no output.
+预期结果：worktree 状态只包含该分支的预期修改，主项目目录没有被自动覆盖。
 
 - [ ] **Step 9: Push branch**
 
@@ -2742,5 +2738,5 @@ Expected: push succeeds.
 - Spec coverage: tasks cover data structure, calculator, drawing, commands, grip editing, right-click command path, double-click WPF editing, docs, tests, build, and manual verification.
 - TDD coverage: domain/application behavior is test-first. ObjectARX and WPF integration are build-first plus manual AutoCAD verification because they depend on AutoCAD runtime.
 - Project wiring: both C++ project files are explicitly updated; WPF SDK project auto-includes new files.
-- Worktree document mirroring: Task 9 and Task 10 include mirror verification for documentation.
+- Worktree 隔离：Task 9 和 Task 10 只确认 worktree 分支状态；除非用户明确批准，否则不自动镜像到主项目目录。
 - Known first-version limitation: true contextual right-click menu may remain command-driven if AutoCAD .NET context menu APIs are not reliable in the target environment; commands still satisfy add/delete PVI workflow and are documented.

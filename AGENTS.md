@@ -164,7 +164,7 @@ RoadProto 采用“C++ ObjectARX 核心 + 可替换 UI 层”的架构原则。
 本项目 Git 仓库 URL 固定为：
 
 ```text
-https://github.com/FrFrFr123/RoadProto.git
+https://github.com/FRay-21/RoadProto.git
 ```
 
 当前 PowerShell 环境如果找不到 `git` 命令，优先使用 Visual Studio 2026 Insiders 自带 Git：

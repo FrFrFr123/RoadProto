@@ -6,7 +6,7 @@
 
 - IDE：`D:\Program Files\Microsoft Visual Studio\18\Insiders\Common7\IDE\devenv.exe`
 - MSBuild：`D:\Program Files\Microsoft Visual Studio\18\Insiders\MSBuild\Current\Bin\amd64\MSBuild.exe`
-- Git 仓库：`https://github.com/FrFrFr123/RoadProto.git`
+- Git 仓库：`https://github.com/FRay-21/RoadProto.git`
 - 当前 PowerShell 若找不到 `git`，优先使用 VS2026 Insiders 自带 Git：`D:\Program Files\Microsoft Visual Studio\18\Insiders\Common7\IDE\CommonExtensions\Microsoft\TeamFoundation\Team Explorer\Git\cmd\git.exe`
 
 命令行构建示例：

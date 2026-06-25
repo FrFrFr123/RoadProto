@@ -17,7 +17,7 @@
 - 每次 Agent 相关修改都必须检查 `docs/agent_builder/maintenance_policy.md`，并把可跨项目复用的架构、入口路由、Skill / Intent、Schema、Rule、Tool、Adapter、执行控制、Trace 或评测经验同步到 `docs/agent_builder/`。
 - 每次形成可构建版本后都要更新 `docs/dev/version_log.md`。
 - 本机编译优先使用 VS2026 Insiders：`D:\Program Files\Microsoft Visual Studio\18\Insiders\Common7\IDE`；命令行优先使用 `D:\Program Files\Microsoft Visual Studio\18\Insiders\MSBuild\Current\Bin\amd64\MSBuild.exe`。
-- Git 仓库 URL 固定为 `https://github.com/FrFrFr123/RoadProto.git`；当前 PowerShell 若找不到 `git`，优先使用 VS2026 Insiders 自带 Git：`D:\Program Files\Microsoft Visual Studio\18\Insiders\Common7\IDE\CommonExtensions\Microsoft\TeamFoundation\Team Explorer\Git\cmd\git.exe`。
+- Git 仓库 URL 固定为 `https://github.com/FRay-21/RoadProto.git`；当前 PowerShell 若找不到 `git`，优先使用 VS2026 Insiders 自带 Git：`D:\Program Files\Microsoft Visual Studio\18\Insiders\Common7\IDE\CommonExtensions\Microsoft\TeamFoundation\Team Explorer\Git\cmd\git.exe`。
 - 编译工具链可以更新，AutoCAD 2021 / ObjectARX 2021 目标不能随意升级。
 - 本地目录概念和 Git 分支概念必须区分：主项目目录是 `F:\0_GPT_道路设计原型功能项目`，worktree 目录是 `.worktrees/<分支名>`；`main` 是 Git 主线分支，worktree 分支 / 功能分支是 Git 隔离开发分支。
 - 如果当前开发目录位于 `.worktrees/<分支名>`，新增或更新的正式文档和所有代码默认只保留在该 worktree 目录，并提交、推送到对应 worktree 分支。禁止在 worktree 任务收尾时自动同步回主项目目录。

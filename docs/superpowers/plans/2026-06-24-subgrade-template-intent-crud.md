@@ -2687,7 +2687,7 @@ git -C F:\0_GPT_道路设计原型功能项目 commit -m "docs: define subgrade 
 
 ---
 
-### Task 10: 全量验证、发布后端并同步主目录
+### Task 10: 全量验证、发布后端并确认 worktree 收口
 
 **Files:**
 
@@ -2820,7 +2820,7 @@ git -C F:\0_GPT_道路设计原型功能项目 status --short
 - WPF 展示追问、风险、查询结果：Task 7。
 - RoadProto 本地创建、修改、删除、查询 Tool：Task 8。
 - 文档同步：Task 9。
-- 测试、发布、健康检查和主目录同步：Task 10。
+- 测试、发布、健康检查和 worktree 收口确认：Task 10。
 
 **Incomplete-marker scan:** 每个实现任务都有明确文件、步骤和验证命令，没有留下未完成标记。
 
