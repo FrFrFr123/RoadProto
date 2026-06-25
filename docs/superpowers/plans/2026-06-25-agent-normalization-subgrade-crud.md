@@ -555,7 +555,7 @@ Append to `IntentRuleServiceTests.cs`:
 
 ```csharp
 [Fact]
-public void Resolve_modify_with_this_template_uses_pick_on_execute_target_mode()
+public void Resolve_modify_with_this_template_plans_pick_on_execute_target_mode()
 {
     var extraction = CreateExtraction(
         "subgrade_template.modify",
@@ -567,8 +567,10 @@ public void Resolve_modify_with_this_template_uses_pick_on_execute_target_mode()
 
     var result = Resolve(extraction);
 
-    Assert.Equal(IntentResolutionStatus.FollowUpRequired, result.Status);
-    Assert.Contains("点选", result.FollowUpMessage, StringComparison.Ordinal);
+    Assert.Equal(IntentResolutionStatus.Planned, result.Status);
+    var arguments = Assert.IsType<SubgradeTemplateToolArguments>(result.Plan?.Arguments);
+    Assert.Equal("PickOnExecute", arguments.TargetMode);
+    Assert.Equal("这个模板", arguments.TargetRef);
 }
 ```
 
@@ -762,7 +764,7 @@ var targetMode = targetRef switch
 };
 ```
 
-Use context handles when target mode is `LastCreated` or `LastModified`. If `PickOnExecute`, set `TargetMode="PickOnExecute"` and allow plan only after approval; if the current design prefers an explicit follow-up before approval, return follow-up message that asks user to confirm point-pick. Use the behavior from the failing test.
+Use context handles when target mode is `LastCreated` or `LastModified`. If `PickOnExecute`, set `TargetMode="PickOnExecute"` and allow the plan to reach approval; after user confirmation, the RoadProto local Adapter prompts for point-picking in AutoCAD.
 
 - [ ] **Step 7: Run tests**
 
