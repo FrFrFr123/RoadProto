@@ -63,6 +63,7 @@
     <ClCompile Include="..\src\domain\alignment\HorizontalAlignmentBuilder.cpp" />
     <ClCompile Include="..\src\domain\alignment\IcdAlignmentFile.cpp" />
     <ClCompile Include="..\src\domain\alignment\StationFormatter.cpp" />
+    <ClCompile Include="..\src\domain\cross_section\FullRoadPavementTemplateModel.cpp" />
     <ClCompile Include="..\src\domain\cross_section\PavementLayerTemplateModel.cpp" />
     <ClCompile Include="..\src\domain\cross_section\RoadModel.cpp" />
     <ClCompile Include="..\src\domain\cross_section\SectionDrawingConfigModel.cpp" />
@@ -88,6 +89,7 @@
     <ClCompile Include="..\src\application\profile\ProfileVerticalCurveCreateService.cpp" />
     <ClCompile Include="..\src\application\profile\ProfileVerticalCurveEditService.cpp" />
     <ClCompile Include="..\src\application\cross_section\RoadModelBuildService.cpp" />
+    <ClCompile Include="..\src\application\cross_section\FullRoadPavementTemplateCreateService.cpp" />
     <ClCompile Include="..\src\application\cross_section\PavementLayerTemplateCreateService.cpp" />
     <ClCompile Include="..\src\application\cross_section\SlopeTemplateCreateService.cpp" />
     <ClCompile Include="..\src\application\cross_section\SubgradeTemplateCreateService.cpp" />
@@ -101,6 +103,8 @@
     <ClCompile Include="..\src\cad_adapter\objectarx\drawing_quantity\ObjectArxPavementQuantityTableCommand.cpp" />
     <ClCompile Include="..\src\cad_adapter\objectarx\drawing_quantity\ObjectArxPavementStructureLegendCommand.cpp" />
     <ClCompile Include="..\src\cad_adapter\objectarx\cross_section\ObjectArxRoadModelCommand.cpp" />
+    <ClCompile Include="..\src\cad_adapter\objectarx\cross_section\FullRoadPavementTemplateDialogBridge.cpp" />
+    <ClCompile Include="..\src\cad_adapter\objectarx\cross_section\ObjectArxFullRoadPavementTemplateCommand.cpp" />
     <ClCompile Include="..\src\cad_adapter\objectarx\cross_section\ObjectArxPavementLayerTemplateCommand.cpp" />
     <ClCompile Include="..\src\cad_adapter\objectarx\cross_section\ObjectArxSlopeTemplateCommand.cpp" />
     <ClCompile Include="..\src\cad_adapter\objectarx\cross_section\ObjectArxSubgradeTemplateCommand.cpp" />

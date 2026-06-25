@@ -1,5 +1,31 @@
 # 版本记录
 
+## v0.1.36_20260625_FullRoadPavementTemplate
+
+- 阶段：整幅路路面结构层模板原型。
+- ARX 文件名规则：`RoadProto_v0.1.36_<构建时间戳>_FullRoadPavementTemplate.arx`。
+- 本次 Debug 验证生成：`artifacts/x64/Debug/RoadProto_v0.1.36_20260625_205001389_FullRoadPavementTemplate.arx`。
+- 本次 Debug 托管插件：`artifacts/managed/Debug/net48/RoadProto.Terrain.UI.dll`。
+- 修改内容：
+  - 新增 `FullRoadPavementTemplateModel` 和 `FullRoadPavementTemplateCreateService`，保存整幅路模板名称、显示比例、参考路基模板信息、部件快照和每部件内嵌结构层。
+  - 新增 `DnFullRoadPavementTemplateEntity`，支持 DWG 持久化、几何范围、变换和模型空间简化显示，显示所有部件、已配置结构层、中线、模板名称和参考路基模板名称。
+  - 新增 `RD_SECTION_FULL_ROAD_PAVEMENT_TEMPLATE_CREATE`、`RD_SECTION_FULL_ROAD_PAVEMENT_TEMPLATE_EDIT_HANDLE`、`RD_SECTION_FULL_ROAD_PAVEMENT_TEMPLATE_APPLY_DIALOG_FILE` 命令，并在横断面 Ribbon 增加 `整幅路路面结构层模板` 入口。
+  - 新增 `FullRoadPavementTemplateDialogBridge` 和托管 `FullRoadPavementTemplateDialogCommands`，支持 WPF 窗口确认、取消、选择/刷新参考路基模板三类动作。
+  - 新增 `FullRoadPavementTemplateWindow`，整体组织沿用既有路面结构层模板窗口，增加参考路基模板、当前路基部件、左/右部件切换，并保留上/下结构层切换。
+  - 新增 `PavementLayerTemplateLayerEditorHelper`，抽取结构层默认层、归一化和默认预设套用逻辑，供整幅路窗口复用既有路面结构层编辑交互。
+  - 参考路基模板采用快照，不自动联动；刷新参考模板时按侧别、部件类型和同侧同类型序号匹配并保留结构层。
+  - 未选择参考路基模板时，预览区提示 `请选择路基模板提取参数`，结构层编辑区禁用，不能确认生成实体。
+  - 行车道默认套用既有“主线行车道”预设，硬路肩默认套用“主线硬路肩”预设，其他部件默认无结构层。
+  - 2026-06-25 补充优化整幅路 WPF 预览：沿用单部件路面结构层模板的滚轮缩放和中键拖动交互，支持点选具体结构层；预览显示结构层填充和颜色、`中线` 标记、路基部件坡度和路缘石高差，路基部件顶部仅绘制彩色线。
+  - 2026-06-25 补充修正整幅路结构层编辑交互：厚度、加宽和坡度均按单部件路面结构层模板的统一值/内外侧拆分方式显示和回写。
+  - 2026-06-25 补充修复整幅路窗口输入和预览问题：结构层输入框编辑时不再因即时刷新吞掉小数点；取消加宽/坡度内外一致后立即显示内侧和外侧两行；预览中单独绘制路缘石实体，中分带和侧分带顶线保持平整。
+  - 2026-06-25 补充对齐路基模板路缘石定义：整幅路 WPF 预览和 `DnFullRoadPavementTemplateEntity` 均按路基模板规则绘制路缘石，宽度在当前部件内部表达，顶部贴合部件顶线，高度驱动相邻部件高差，埋深向下显示；WPF 预览增加部件宽度、坡度和路缘石宽度/高度/埋深尺寸文字，CAD 实体中心标记改为 `中线`。
+  - 2026-06-25 补充修正整幅路 CAD 自定义实体显示：`DnFullRoadPavementTemplateEntity` 参考 `DnPavementLayerTemplateEntity` 的显示方法，对每个部件调用 `PavementLayerTemplateRules::buildSection` 生成真实结构层四边形，并绘制层色弱化填充、填充线和层色边线；实体范围同步纳入结构层加宽后的外扩点，避免 WPF 预览与 CAD 实体在厚度、加宽、坡度、颜色和填充显示上分叉。
+  - 本次不接入道路模型、不接入横断面图生成、不接入工程量统计，不做 XML 导入导出，仅预留后续按 handle 读取整幅路模板数据的领域入口。
+  - 新增整幅路路面结构层模板设计文档、实施计划、三份业务文档、复用说明，并同步模块说明、模块索引、复用能力目录、README 和版本信息。
+- 验证状态：核心测试 Debug 构建与运行通过；托管 Bridge 测试通过；WPF Debug 构建通过；`src/app/RoadProtoArx.vcxproj` Debug 构建通过，生成上方 ARX。2026-06-25 补充优化已通过核心测试 Debug 构建与运行、托管 Bridge 测试、WPF Debug 构建和 Debug ARX 构建。AutoCAD 图形界面点选参考路基模板、窗口交互和 DWG 保存重开仍待人工点验。
+- 是否可作为稳定测试版本：否。当前为整幅路模板原型功能分支，未接入道路模型和横断面图生成链路。
+
 ## v0.1.35_20260624_AgentMvp
 
 - 阶段：可控工程 Agent MVP。

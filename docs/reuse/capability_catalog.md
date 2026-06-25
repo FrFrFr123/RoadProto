@@ -61,6 +61,9 @@
 | 路面结构层模板领域模型与默认值 | V0.1.24 原型，支持上面层/中面层/下面层/沥青封层/基层/底基层/垫层/搭板、每层 RGB 显示色、CAD 填充类型、填充角度、填充比例、显示方式、结构代号、路基干湿类型、路面类型、路基土组、设计弯沉、累计轴次、等厚/内外侧非等厚、内外侧正/负加宽和正/负坡度、顶边沿上一层底边所在直线延长或收回、坡度按 `1:n` 驱动顶边到底边的侧边水平移动、四边形/梯形横断面预览几何；新增通用设计字段当前仅作为数据保留 | `src/domain/cross_section/PavementLayerTemplateModel.*` |
 | 路面结构层模板自定义实体 | V0.1.24 原型，独立显示路面结构层模板，按层保存 RGB 真彩色、填充类型、填充角度和填充比例，并持久化结构代号、路基干湿类型、路面类型、路基土组、设计弯沉和累计轴次；支持按颜色/按填充/按填充+颜色显示，DWG 中仅在模板上方居中显示模板名称，不显示尺寸标注，新增通用设计字段不绘制为文字，支持 DWG 持久化、几何范围、变换和双击编辑入口 | `src/cad_adapter/objectarx/cross_section/DnPavementLayerTemplateEntity.*` |
 | 路面结构层模板 WPF 编辑 Bridge | V0.1.24 原型，通过请求/响应文件编辑路面结构层模板、显示方式、每层 RGB、每层填充类型、填充角度、填充比例，以及可折叠显示的结构代号、路基干湿类型、路面类型、路基土组、设计弯沉和累计轴次；WPF 新建流程当前直接套用“沥青路面-主线行车道”文档预设并打开编辑窗口，同时保留路面结构层创建向导代码，支持当前层编辑、材料名称可编辑下拉推荐项、预览点击选层、固定模型尺寸的引线式层名厚度标注、加宽尺寸箭头、坡度侧边标注、索引颜色选择和 `.rpavement.xml` 导入导出 | `src/cad_adapter/objectarx/cross_section/PavementLayerTemplateDialogBridge.*` |
+| 整幅路路面结构层模板领域模型 | V0.1.36 原型，按参考路基模板生成整幅路部件快照，每个部件内嵌结构层数据；刷新参考模板时按侧别、部件类型和同侧同类型序号匹配并保留结构层，不自动联动参考模板 | `src/domain/cross_section/FullRoadPavementTemplateModel.*` |
+| 整幅路路面结构层模板自定义实体 | V0.1.36 原型，独立保存整幅路模板、参考路基模板信息、部件快照和每部件结构层，模型空间显示所有路基部件、已配置结构层、中线和模板名称，支持 DWG 持久化、范围和变换 | `src/cad_adapter/objectarx/cross_section/DnFullRoadPavementTemplateEntity.*` |
+| 整幅路路面结构层模板 WPF 编辑 Bridge | V0.1.36 原型，通过请求/响应文件编辑整幅路模板，支持参考路基模板点选/刷新、当前部件切换、预览部件点选和每部件结构层编辑；不做 XML 导入导出 | `src/cad_adapter/objectarx/cross_section/FullRoadPavementTemplateDialogBridge.*` |
 | 横断面道路模型 | V0.1.27 原型，按道路中线、竖曲线、路基模板范围、路面结构层模板引用、边坡模板组和构造物范围生成断面节点链、结构层边界线与弱化填充显示、地面剖面快照与三维网格线框，支持优先级解析、行内点选模板、模板组管理、构造物范围按侧别跳过边坡、生成进度回调、TIN 网格候选剖切、采样桩号保存、横断面预览、DWG 持久化和编辑回写 | `src/domain/cross_section/RoadModel.*` |
 | 道路模型自定义实体 | V0.1.27 原型，保存 `RoadModelData`、构造物范围、采样桩号、断面节点链、结构层节点、地面剖面快照和网格线框，并绘制路基、结构层、边坡横向肋线、纵向连接线、最外侧边界线、端部封闭线和过渡线，支持 DWG 持久化、几何范围和变换 | `src/cad_adapter/objectarx/cross_section/DnRoadModelEntity.*` |
 | 道路模型横断面落图实体 | V0.1.31 原型，每个桩号生成一个 `DnRoadModelSectionDrawingEntity`，保存外框、桩号文字、线段、结构层面域、清表面域、颜色、模板填充参数、横断面图配置、清表厚度、面域来源字段和 `manualEdited` 手动编辑标记；外框和桩号文字使用白色，用作后续面积标注和算量承载 | `src/cad_adapter/objectarx/cross_section/DnRoadModelSectionDrawingEntity.*` |
@@ -161,3 +164,13 @@
 - 道路模型生成读取绑定模板并创建结构层三维边界线，`DnRoadModelEntity` 仍按层 RGB 显示为弱化填充面和层色边线，`RoadModelSectionPreviewBuilder` 在查看横断面中显示 `结构层`；模板显示方式不改变道路模型显示。
 - `PavementStructureLegendPlanner` 是出图图例规划能力，读取路面结构层模板的结构代号、路基土组、路基干湿类型、设计弯沉、累计轴次、结构层厚度、层名、颜色和填充参数，生成等宽模板列、表头列宽和不合并的底部填充图例项；CAD 绘制由 ObjectARX adapter 使用普通实体完成，结构图示内部不写层类型文字。
 - 自动联动重建、结构层实体面、材料库、体积和算量仍需后续扩展。
+
+## V0.1.36 整幅路路面结构层模板复用边界
+
+- `FullRoadPavementTemplateModel` 是整幅路模板领域核心，保存参考路基模板快照、每个路基部件的快照参数和每部件内嵌结构层。
+- 参考路基模板只作为快照来源，实体保存后不自动监听、不自动联动、不自动重建。
+- 刷新参考模板时按侧别、部件类型和同侧同类型序号匹配部件，匹配成功则保留结构层，只刷新宽度、坡度、颜色、变宽/变坡表和路缘石等路基参数。
+- 每个部件结构层复用 `PavementLayerTemplateData` 语义，但不引用单部件 `DnPavementLayerTemplateEntity` handle。
+- `DnFullRoadPavementTemplateEntity` 是 CAD 持久化和显示能力，负责绘制完整整幅路示意、所有部件、已配置结构层、中线和参考模板名称。
+- `FullRoadPavementTemplateDialogBridge` 是原型阶段 UI 解耦能力，通过请求/响应文件在 WPF 与 C++ ObjectARX 之间传递模板参数和点选参考路基模板动作。
+- 本版本不接入道路模型、不接入横断面图生成、不接入工程量统计、不做 XML 导入导出；后续读取口子以 `FullRoadPavementTemplateData` 为准。

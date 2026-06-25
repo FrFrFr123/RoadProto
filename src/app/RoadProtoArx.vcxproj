@@ -72,6 +72,7 @@
     <ClCompile Include="..\domain\alignment\HorizontalAlignmentBuilder.cpp" />
     <ClCompile Include="..\domain\alignment\IcdAlignmentFile.cpp" />
     <ClCompile Include="..\domain\alignment\StationFormatter.cpp" />
+    <ClCompile Include="..\domain\cross_section\FullRoadPavementTemplateModel.cpp" />
     <ClCompile Include="..\domain\cross_section\PavementLayerTemplateModel.cpp" />
     <ClCompile Include="..\domain\cross_section\RoadModel.cpp" />
     <ClCompile Include="..\domain\cross_section\SectionDrawingConfigModel.cpp" />
@@ -95,6 +96,7 @@
     <ClCompile Include="..\domain\terrain\TerrainTinBuilder.cpp" />
     <ClCompile Include="..\application\alignment\AlignmentCreateService.cpp" />
     <ClCompile Include="..\application\cross_section\RoadModelBuildService.cpp" />
+    <ClCompile Include="..\application\cross_section\FullRoadPavementTemplateCreateService.cpp" />
     <ClCompile Include="..\application\cross_section\PavementLayerTemplateCreateService.cpp" />
     <ClCompile Include="..\application\cross_section\SlopeTemplateCreateService.cpp" />
     <ClCompile Include="..\application\cross_section\SubgradeTemplateCreateService.cpp" />
@@ -121,6 +123,7 @@
     <ClCompile Include="..\cad_adapter\objectarx\alignment\AlignmentDialogBridge.cpp" />
     <ClCompile Include="..\cad_adapter\objectarx\alignment\DnRoadCenterlineEntity.cpp" />
     <ClCompile Include="..\cad_adapter\objectarx\alignment\ObjectArxAlignmentCommand.cpp" />
+    <ClCompile Include="..\cad_adapter\objectarx\cross_section\DnFullRoadPavementTemplateEntity.cpp" />
     <ClCompile Include="..\cad_adapter\objectarx\cross_section\DnPavementLayerTemplateEntity.cpp" />
     <ClCompile Include="..\cad_adapter\objectarx\cross_section\DnRoadModelEntity.cpp" />
     <ClCompile Include="..\cad_adapter\objectarx\cross_section\DnRoadModelSectionDrawingEntity.cpp" />
@@ -129,6 +132,8 @@
     <ClCompile Include="..\cad_adapter\objectarx\cross_section\RoadModelDialogBridge.cpp" />
     <ClCompile Include="..\cad_adapter\objectarx\cross_section\RoadModelSectionViewerBridge.cpp" />
     <ClCompile Include="..\cad_adapter\objectarx\cross_section\SectionDrawingConfigDialogBridge.cpp" />
+    <ClCompile Include="..\cad_adapter\objectarx\cross_section\FullRoadPavementTemplateDialogBridge.cpp" />
+    <ClCompile Include="..\cad_adapter\objectarx\cross_section\ObjectArxFullRoadPavementTemplateCommand.cpp" />
     <ClCompile Include="..\cad_adapter\objectarx\cross_section\ObjectArxPavementLayerTemplateCommand.cpp" />
     <ClCompile Include="..\cad_adapter\objectarx\cross_section\ObjectArxRoadModelCommand.cpp" />
     <ClCompile Include="..\cad_adapter\objectarx\cross_section\ObjectArxSectionDrawingConfigCommand.cpp" />

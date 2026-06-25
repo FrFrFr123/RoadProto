@@ -1,0 +1,304 @@
+<Window x:Class="RoadProto.Terrain.UI.FullRoadPavementTemplateWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="整幅路路面结构层模板"
+        Width="1220"
+        Height="760"
+        MinWidth="1040"
+        MinHeight="660"
+        WindowStartupLocation="CenterOwner"
+        Loaded="Window_Loaded">
+    <Grid Margin="12">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="410" />
+        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <Grid Grid.ColumnSpan="2" Margin="0,0,0,10">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="76" />
+                <ColumnDefinition Width="260" />
+                <ColumnDefinition Width="96" />
+                <ColumnDefinition Width="96" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <TextBlock Text="模板名称" VerticalAlignment="Center" />
+            <TextBox x:Name="TemplateNameBox" Grid.Column="1" Height="28" TextChanged="GlobalInput_Changed" />
+            <TextBlock Grid.Column="2" Text="显示比例" VerticalAlignment="Center" Margin="14,0,0,0" />
+            <TextBox x:Name="DisplayScaleBox" Grid.Column="3" Height="28" TextChanged="GlobalInput_Changed" />
+        </Grid>
+
+        <Border Grid.Row="1"
+                Grid.Column="0"
+                BorderBrush="#56606D"
+                BorderThickness="1"
+                Background="#151A20"
+                ClipToBounds="True">
+            <Grid>
+                <Canvas x:Name="PreviewCanvas"
+                        Background="#151A20"
+                        ClipToBounds="True"
+                        SizeChanged="PreviewCanvas_SizeChanged"
+                        MouseWheel="PreviewCanvas_MouseWheel"
+                        MouseDown="PreviewCanvas_MouseDown"
+                        MouseMove="PreviewCanvas_MouseMove"
+                        MouseUp="PreviewCanvas_MouseUp" />
+                <TextBlock x:Name="EmptyPreviewText"
+                           Text="请选择路基模板提取参数"
+                           Foreground="#D8DEE8"
+                           FontSize="20"
+                           FontWeight="SemiBold"
+                           HorizontalAlignment="Center"
+                           VerticalAlignment="Center"
+                           Visibility="Collapsed" />
+            </Grid>
+        </Border>
+
+        <ScrollViewer Grid.Row="1"
+                      Grid.Column="1"
+                      Margin="12,0,0,0"
+                      VerticalScrollBarVisibility="Auto">
+            <StackPanel>
+                <TextBlock Text="通用参数" FontWeight="SemiBold" Margin="0,0,0,8" />
+                <Grid Margin="0,0,0,12">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="124" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="34" />
+                        <RowDefinition Height="34" />
+                        <RowDefinition Height="34" />
+                        <RowDefinition Height="34" />
+                    </Grid.RowDefinitions>
+                    <TextBlock Text="参考路基模板" VerticalAlignment="Center" />
+                    <DockPanel Grid.Column="1" LastChildFill="True">
+                        <Button x:Name="ReferenceSubgradeTemplateButton"
+                                DockPanel.Dock="Right"
+                                Content="选择/刷新"
+                                Width="86"
+                                Height="26"
+                                Margin="8,0,0,0"
+                                Click="ReferenceSubgradeTemplateButton_Click" />
+                        <TextBlock x:Name="ReferenceSubgradeTemplateText" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                    </DockPanel>
+                    <TextBlock Grid.Row="1" Text="当前路基部件" VerticalAlignment="Center" />
+                    <DockPanel Grid.Row="1" Grid.Column="1" LastChildFill="True">
+                        <Button x:Name="PreviousComponentButton"
+                                DockPanel.Dock="Left"
+                                Content="◀"
+                                Width="30"
+                                Height="26"
+                                Margin="0,0,4,0"
+                                ToolTip="切换到左侧部件"
+                                Click="PreviousComponentButton_Click" />
+                        <Button x:Name="NextComponentButton"
+                                DockPanel.Dock="Right"
+                                Content="▶"
+                                Width="30"
+                                Height="26"
+                                Margin="4,0,0,0"
+                                ToolTip="切换到右侧部件"
+                                Click="NextComponentButton_Click" />
+                        <TextBox x:Name="CurrentComponentBox"
+                                 Height="26"
+                                 IsReadOnly="True"
+                                 Focusable="False" />
+                    </DockPanel>
+                    <TextBlock Grid.Row="2" Text="结构层数量" VerticalAlignment="Center" />
+                    <TextBox x:Name="LayerCountBox" Grid.Row="2" Grid.Column="1" Height="26" TextChanged="LayerCountBox_TextChanged" />
+                    <TextBlock Grid.Row="3" Text="当前结构层" VerticalAlignment="Center" />
+                    <DockPanel Grid.Row="3" Grid.Column="1" LastChildFill="True">
+                        <Button x:Name="PreviousLayerButton"
+                                DockPanel.Dock="Left"
+                                Content="▲"
+                                Width="30"
+                                Height="26"
+                                Margin="0,0,4,0"
+                                ToolTip="编辑上一层"
+                                Click="PreviousLayerButton_Click" />
+                        <Button x:Name="NextLayerButton"
+                                DockPanel.Dock="Right"
+                                Content="▼"
+                                Width="30"
+                                Height="26"
+                                Margin="4,0,0,0"
+                                ToolTip="编辑下一层"
+                                Click="NextLayerButton_Click" />
+                        <TextBox x:Name="CurrentLayerBox" Height="26" TextChanged="CurrentLayerBox_TextChanged" />
+                    </DockPanel>
+                </Grid>
+
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
+                    <Button x:Name="AddLayerButton" Content="新增结构层" Width="94" Height="28" Margin="0,0,8,0" Click="AddLayerButton_Click" />
+                    <Button x:Name="DeleteLayerButton" Content="删除结构层" Width="94" Height="28" Click="DeleteLayerButton_Click" />
+                </StackPanel>
+
+                <TextBlock x:Name="NoLayerText"
+                           Text="当前部件未配置结构层"
+                           FontWeight="SemiBold"
+                           Margin="0,0,0,10"
+                           Visibility="Collapsed" />
+
+                <StackPanel x:Name="LayerEditorPanel">
+                    <Grid Margin="0,0,0,6">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="108" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="类型" VerticalAlignment="Center" />
+                        <ComboBox x:Name="LayerTypeBox" Grid.Column="1" Height="26" SelectionChanged="LayerInput_Changed" />
+                    </Grid>
+                    <Grid Margin="0,0,0,6">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="108" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="名称" VerticalAlignment="Center" />
+                        <ComboBox x:Name="LayerNameBox"
+                                  Grid.Column="1"
+                                  Height="26"
+                                  IsEditable="True"
+                                  IsTextSearchEnabled="True"
+                                  StaysOpenOnEdit="True"
+                                  SelectionChanged="LayerInput_Changed" />
+                    </Grid>
+                    <Grid Margin="0,0,0,6">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="108" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="颜色 RGB" VerticalAlignment="Center" />
+                        <StackPanel Grid.Column="1" Orientation="Horizontal">
+                            <TextBox x:Name="ColorRBox" Width="48" Height="26" TextChanged="LayerInput_Changed" />
+                            <TextBlock Text="," Margin="4,0" VerticalAlignment="Center" />
+                            <TextBox x:Name="ColorGBox" Width="48" Height="26" TextChanged="LayerInput_Changed" />
+                            <TextBlock Text="," Margin="4,0" VerticalAlignment="Center" />
+                            <TextBox x:Name="ColorBBox" Width="48" Height="26" TextChanged="LayerInput_Changed" />
+                            <Border x:Name="ColorPreview"
+                                    Width="34"
+                                    Height="24"
+                                    Margin="8,1,0,1"
+                                    BorderBrush="#919AA8"
+                                    BorderThickness="1" />
+                        </StackPanel>
+                    </Grid>
+                    <Grid Margin="0,0,0,6">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="108" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="填充类型" VerticalAlignment="Center" />
+                        <ComboBox x:Name="HatchPatternBox" Grid.Column="1" Height="26" SelectionChanged="LayerInput_Changed" />
+                    </Grid>
+                    <Grid Margin="0,0,0,6">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="108" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="填充角度" VerticalAlignment="Center" />
+                        <TextBox x:Name="HatchAngleBox" Grid.Column="1" Height="26" TextChanged="LayerInput_Changed" />
+                    </Grid>
+                    <Grid Margin="0,0,0,6">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="108" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="填充比例" VerticalAlignment="Center" />
+                        <TextBox x:Name="HatchScaleBox" Grid.Column="1" Height="26" TextChanged="LayerInput_Changed" />
+                    </Grid>
+                    <CheckBox x:Name="UniformThicknessBox" Content="内外厚度是否一致" Margin="0,4,0,6" Checked="LayerInput_Changed" Unchecked="LayerInput_Changed" />
+                    <Grid x:Name="ThicknessRow" Margin="0,0,0,6">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="108" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="厚度" VerticalAlignment="Center" />
+                        <TextBox x:Name="ThicknessBox" Grid.Column="1" Height="26" TextChanged="LayerInput_Changed" />
+                    </Grid>
+                    <Grid x:Name="InnerThicknessRow" Margin="0,0,0,6">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="108" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="内侧厚度" VerticalAlignment="Center" />
+                        <TextBox x:Name="InnerThicknessBox" Grid.Column="1" Height="26" TextChanged="LayerInput_Changed" />
+                    </Grid>
+                    <Grid x:Name="OuterThicknessRow" Margin="0,0,0,6">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="108" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="外侧厚度" VerticalAlignment="Center" />
+                        <TextBox x:Name="OuterThicknessBox" Grid.Column="1" Height="26" TextChanged="LayerInput_Changed" />
+                    </Grid>
+                    <CheckBox x:Name="UniformWideningBox" Content="内外加宽是否一致" Margin="0,4,0,6" Checked="LayerInput_Changed" Unchecked="LayerInput_Changed" />
+                    <Grid x:Name="WideningRow" Margin="0,0,0,6">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="108" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="加宽" VerticalAlignment="Center" />
+                        <TextBox x:Name="WideningBox" Grid.Column="1" Height="26" TextChanged="LayerInput_Changed" />
+                    </Grid>
+                    <Grid x:Name="InnerWideningRow" Margin="0,0,0,6">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="108" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="内侧加宽" VerticalAlignment="Center" />
+                        <TextBox x:Name="InnerWideningBox" Grid.Column="1" Height="26" TextChanged="LayerInput_Changed" />
+                    </Grid>
+                    <Grid x:Name="OuterWideningRow" Margin="0,0,0,6">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="108" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="外侧加宽" VerticalAlignment="Center" />
+                        <TextBox x:Name="OuterWideningBox" Grid.Column="1" Height="26" TextChanged="LayerInput_Changed" />
+                    </Grid>
+                    <CheckBox x:Name="UniformSlopeBox" Content="内外坡度是否一致" Margin="0,4,0,6" Checked="LayerInput_Changed" Unchecked="LayerInput_Changed" />
+                    <Grid x:Name="SlopeRow" Margin="0,0,0,6">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="108" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="坡度" VerticalAlignment="Center" />
+                        <TextBox x:Name="SlopeBox" Grid.Column="1" Height="26" TextChanged="LayerInput_Changed" />
+                    </Grid>
+                    <Grid x:Name="InnerSlopeRow" Margin="0,0,0,6">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="108" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="内侧坡度" VerticalAlignment="Center" />
+                        <TextBox x:Name="InnerSlopeBox" Grid.Column="1" Height="26" TextChanged="LayerInput_Changed" />
+                    </Grid>
+                    <Grid x:Name="OuterSlopeRow" Margin="0,0,0,6">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="108" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="外侧坡度" VerticalAlignment="Center" />
+                        <TextBox x:Name="OuterSlopeBox" Grid.Column="1" Height="26" TextChanged="LayerInput_Changed" />
+                    </Grid>
+                </StackPanel>
+            </StackPanel>
+        </ScrollViewer>
+
+        <StackPanel Grid.Row="2"
+                    Grid.ColumnSpan="2"
+                    Orientation="Horizontal"
+                    HorizontalAlignment="Right"
+                    Margin="0,12,0,0">
+            <Button x:Name="OkButton" Content="确定" Width="90" Height="32" Margin="0,0,8,0" IsDefault="True" Click="Ok_Click" />
+            <Button Content="取消" Width="90" Height="32" Margin="0,0,8,0" IsCancel="True" Click="Cancel_Click" />
+            <Button x:Name="ApplyButton" Content="应用" Width="90" Height="32" Click="Apply_Click" />
+        </StackPanel>
+    </Grid>
+</Window>

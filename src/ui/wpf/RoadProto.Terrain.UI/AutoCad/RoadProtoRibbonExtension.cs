@@ -21,6 +21,7 @@ using CoreApplication = Autodesk.AutoCAD.ApplicationServices.Core.Application;
 [assembly: CommandClass(typeof(RoadProto.Terrain.UI.AutoCad.RoadModelDialogCommands))]
 [assembly: CommandClass(typeof(RoadProto.Terrain.UI.AutoCad.RoadModelSectionViewerCommands))]
 [assembly: CommandClass(typeof(RoadProto.Terrain.UI.AutoCad.SectionDrawingConfigDialogCommands))]
+[assembly: CommandClass(typeof(RoadProto.Terrain.UI.AutoCad.FullRoadPavementTemplateDialogCommands))]
 [assembly: CommandClass(typeof(RoadProto.Terrain.UI.Agent.AgentConsoleCommands))]
 
 namespace RoadProto.Terrain.UI.AutoCad;
@@ -45,6 +46,7 @@ public sealed class RoadProtoRibbonExtension : IExtensionApplication
     private const string SubgradeTemplateButtonId = "ROADPROTO_RD_SECTION_SUBGRADE_TEMPLATE_CREATE";
     private const string SlopeTemplateButtonId = "ROADPROTO_RD_SECTION_SLOPE_TEMPLATE_CREATE";
     private const string PavementLayerTemplateButtonId = "ROADPROTO_RD_SECTION_PAVEMENT_LAYER_TEMPLATE_CREATE";
+    private const string FullRoadPavementTemplateButtonId = "ROADPROTO_RD_SECTION_FULL_ROAD_PAVEMENT_TEMPLATE_CREATE";
     private const string RoadModelCreateButtonId = "ROADPROTO_RD_SECTION_ROAD_MODEL_CREATE";
     private const string RoadModelEditButtonId = "ROADPROTO_RD_SECTION_ROAD_MODEL_EDIT";
     private const string RoadModelSectionViewerButtonId = "ROADPROTO_RD_SECTION_ROAD_MODEL_VIEW_SECTION";
@@ -63,6 +65,7 @@ public sealed class RoadProtoRibbonExtension : IExtensionApplication
     private const string SubgradeTemplateDxfName = "DNSUBGRADETEMPLATEENTITY";
     private const string SlopeTemplateDxfName = "DNSLOPETEMPLATEENTITY";
     private const string PavementLayerTemplateDxfName = "DNPAVEMENTLAYERTEMPLATEENTITY";
+    private const string FullRoadPavementTemplateDxfName = "DNFULLROADPAVEMENTTEMPLATEENTITY";
     private static ObjectId _lastDoubleClickObjectId = ObjectId.Null;
     private static DateTime _lastDoubleClickUtc = DateTime.MinValue;
     private static bool _doubleClickHookAttached;
@@ -300,6 +303,15 @@ public sealed class RoadProtoRibbonExtension : IExtensionApplication
                 "创建路面结构层模板",
                 "点取插入点并创建独立路面结构层模板",
                 "RD_SECTION_PAVEMENT_LAYER_TEMPLATE_CREATE "));
+        }
+
+        if (!crossSectionPanel.Source.Items.OfType<RibbonButton>().Any(item => item.Id == FullRoadPavementTemplateButtonId))
+        {
+            crossSectionPanel.Source.Items.Add(CreateCrossSectionCommandButton(
+                FullRoadPavementTemplateButtonId,
+                "整幅路路面结构层模板",
+                "选择路基模板快照并配置整幅路各部件结构层",
+                "RD_SECTION_FULL_ROAD_PAVEMENT_TEMPLATE_CREATE "));
         }
 
         if (!crossSectionPanel.Source.Items.OfType<RibbonButton>().Any(item => item.Id == RoadModelCreateButtonId))
@@ -588,6 +600,15 @@ public sealed class RoadProtoRibbonExtension : IExtensionApplication
                 {
                     QueuePavementLayerTemplateEditByHandle(document, pavementLayerTemplateId);
                 }
+                return;
+            }
+
+            if (TryFindEntityByDxfName(document, e.Location, FullRoadPavementTemplateDxfName, out var fullRoadPavementTemplateId))
+            {
+                if (!SuppressDuplicateDoubleClick(fullRoadPavementTemplateId))
+                {
+                    QueueFullRoadPavementTemplateEditByHandle(document, fullRoadPavementTemplateId);
+                }
             }
         }
         catch (System.Exception error)
@@ -811,6 +832,17 @@ public sealed class RoadProtoRibbonExtension : IExtensionApplication
         }
 
         document.SendStringToExecute($"RD_SECTION_PAVEMENT_LAYER_TEMPLATE_EDIT_HANDLE {handle}\n", true, false, true);
+    }
+
+    private static void QueueFullRoadPavementTemplateEditByHandle(Document document, ObjectId entityId)
+    {
+        var handle = entityId.Handle.ToString();
+        if (string.IsNullOrWhiteSpace(handle))
+        {
+            return;
+        }
+
+        document.SendStringToExecute($"RD_SECTION_FULL_ROAD_PAVEMENT_TEMPLATE_EDIT_HANDLE {handle}\n", true, false, true);
     }
 
     private static void QueueRoadModelEditByHandle(Document document, ObjectId entityId)

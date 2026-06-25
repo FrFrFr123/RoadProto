@@ -1176,6 +1176,146 @@ static void PavementLayerTemplateDialogFileWritesAcceptedResponseUsingInvariantC
     }
 }
 
+static void FullRoadPavementTemplateDialogFileRoundTripsComponentsAndAction()
+{
+    var requestPath = NewTempFile();
+    var responsePath = NewTempFile();
+    try
+    {
+        File.WriteAllLines(requestPath, new[]
+        {
+            "handle=FR%251",
+            "responsePath=C:/temp/full-road.response",
+            "templateName=整幅路%0A结构层",
+            "displayScale=20",
+            "referenceSubgradeTemplateHandle=SG%251",
+            "referenceSubgradeTemplateName=高速路基%0A模板",
+            "referenceRoadGrade=Expressway",
+            "currentComponentIndex=0",
+            "applyDefaultPresets=1",
+            "componentCount=1",
+            "component.0.side=Left",
+            "component.0.type=TravelLane",
+            "component.0.sameSideTypeOrdinal=1",
+            "component.0.width=7.5",
+            "component.0.height=0",
+            "component.0.fixedSlope=0.02",
+            "component.0.slopeMode=Fixed",
+            "component.0.colorR=204",
+            "component.0.colorG=102",
+            "component.0.colorB=0",
+            "component.0.wideningCount=1",
+            "component.0.widening.0.station=100.5",
+            "component.0.widening.0.value=0.25",
+            "component.0.variableSlopeCount=1",
+            "component.0.variableSlope.0.station=100.5",
+            "component.0.variableSlope.0.value=0.03",
+            "component.0.hasInnerCurb=1",
+            "component.0.innerCurbWidth=0.15",
+            "component.0.innerCurbHeight=0.12",
+            "component.0.innerCurbEmbedDepth=0.08",
+            "component.0.hasOuterCurb=1",
+            "component.0.outerCurbWidth=0.18",
+            "component.0.outerCurbHeight=0.14",
+            "component.0.outerCurbEmbedDepth=0.09",
+            "component.0.pavement.templateName=左幅行车道",
+            "component.0.pavement.displayScale=10",
+            "component.0.pavement.previewWidth=7.5",
+            "component.0.pavement.displayMode=HatchAndColor",
+            "component.0.pavement.layerCount=1",
+            "component.0.pavement.layer.0.type=UpperSurface",
+            "component.0.pavement.layer.0.name=SMA%2513",
+            "component.0.pavement.layer.0.uniformThickness=1",
+            "component.0.pavement.layer.0.thickness=0.04",
+            "component.0.pavement.layer.0.innerThickness=0.04",
+            "component.0.pavement.layer.0.outerThickness=0.04",
+            "component.0.pavement.layer.0.colorR=228",
+            "component.0.pavement.layer.0.colorG=187",
+            "component.0.pavement.layer.0.colorB=236",
+        }, Encoding.UTF8);
+
+        WithCulture("fr-FR", () =>
+        {
+            var request = FullRoadPavementTemplateDialogFile.ReadRequest(requestPath);
+            Check(request.Handle == "FR%1", "full-road request should unescape handle");
+            Check(request.ResponsePath == "C:/temp/full-road.response", "full-road request should read response path");
+            Check(request.TemplateName == "整幅路\n结构层", "full-road request should unescape template name");
+            Check(request.ReferenceSubgradeTemplateHandle == "SG%1", "full-road request should read reference handle");
+            Check(request.ReferenceSubgradeTemplateName == "高速路基\n模板", "full-road request should read reference name");
+            Check(request.ReferenceRoadGrade == SubgradeRoadGrade.Expressway, "full-road request should parse road grade");
+            Check(request.ApplyDefaultPresets, "full-road request should read default preset flag");
+            Check(request.Components.Count == 1, "full-road request should read component count");
+            Check(request.Components[0].Side == SubgradeSide.Left, "full-road component side should parse");
+            Check(request.Components[0].Type == SubgradeComponentType.TravelLane, "full-road component type should parse");
+            Check(request.Components[0].SameSideTypeOrdinal == 1, "full-road component ordinal should parse");
+            Check(Math.Abs(request.Components[0].Width - 7.5) < 1.0e-9, "full-road component width should parse invariant decimal");
+            Check(request.Components[0].WideningTable.Count == 1, "full-road component widening table should parse");
+            Check(request.Components[0].VariableSlopeTable.Count == 1, "full-road component slope table should parse");
+            Check(request.Components[0].HasInnerCurb && request.Components[0].HasOuterCurb, "full-road component curbs should parse");
+            Check(request.Components[0].Pavement.Layers.Count == 1, "full-road component pavement layers should parse");
+            Check(request.Components[0].Pavement.Layers[0].Name == "SMA%13", "full-road pavement layer name should unescape percent");
+        });
+
+        var response = new FullRoadPavementTemplateDialogResponse
+        {
+            Accepted = false,
+            Action = FullRoadPavementTemplateDialogAction.PickReferenceSubgradeTemplate,
+            Handle = "FR%1",
+            TemplateName = "整幅路\n结构层",
+            DisplayScale = 20.0,
+            ReferenceSubgradeTemplateHandle = "SG%1",
+            ReferenceSubgradeTemplateName = "高速路基\n模板",
+            ReferenceRoadGrade = SubgradeRoadGrade.Expressway,
+            CurrentComponentIndex = 0,
+        };
+        response.Components.Add(new FullRoadPavementComponentDto
+        {
+            Side = SubgradeSide.Left,
+            Type = SubgradeComponentType.TravelLane,
+            SameSideTypeOrdinal = 1,
+            Width = 7.5,
+            FixedSlope = 0.02,
+            ColorR = 204,
+            ColorG = 102,
+            ColorB = 0,
+            HasInnerCurb = true,
+            InnerCurbWidth = 0.15,
+            InnerCurbHeight = 0.12,
+            InnerCurbEmbedDepth = 0.08,
+            Pavement = new PavementLayerTemplateDto
+            {
+                TemplateName = "左幅行车道",
+                DisplayScale = 10,
+                PreviewWidth = 7.5,
+                DisplayMode = PavementLayerTemplateDisplayMode.HatchAndColor,
+                Layers = { MakePavementLayer(PavementLayerType.UpperSurface, "SMA%13", true, 0.04, 0.04, 0.04) },
+            },
+        });
+
+        WithCulture("de-DE", () => FullRoadPavementTemplateDialogFile.WriteResponse(responsePath, response));
+        var content = File.ReadAllText(responsePath, Encoding.UTF8);
+        Check(content.Contains("action=pickReferenceSubgradeTemplate"), "full-road response should write pick reference action");
+        Check(content.Contains("handle=FR%251"), "full-road response should escape handle");
+        Check(content.Contains("templateName=整幅路%0A结构层"), "full-road response should escape template name");
+        Check(content.Contains("referenceSubgradeTemplateHandle=SG%251"), "full-road response should escape reference handle");
+        Check(content.Contains("componentCount=1"), "full-road response should write component count");
+        Check(content.Contains("component.0.side=Left"), "full-road response should write component side");
+        Check(content.Contains("component.0.sameSideTypeOrdinal=1"), "full-road response should write component ordinal");
+        Check(content.Contains("component.0.pavement.layer.0.name=SMA%2513"), "full-road response should write nested pavement layer");
+    }
+    finally
+    {
+        if (File.Exists(requestPath))
+        {
+            File.Delete(requestPath);
+        }
+        if (File.Exists(responsePath))
+        {
+            File.Delete(responsePath);
+        }
+    }
+}
+
 static void PavementLayerTemplateXmlFileRoundTripsPavementTemplate()
 {
     var path = Path.Combine(Path.GetTempPath(), $"RoadProtoManagedBridgeTests_{Guid.NewGuid():N}.rpavement.xml");
@@ -1881,6 +2021,7 @@ RoadModelSectionViewerWindowContainsStationListPreviewAndLegend();
 RoadModelWindowReadOnlyHandleBindingIsOneWay();
 PavementLayerTemplateDialogFileReadsRequestUsingInvariantCultureAndEscaping();
 PavementLayerTemplateDialogFileWritesAcceptedResponseUsingInvariantCultureAndEscaping();
+FullRoadPavementTemplateDialogFileRoundTripsComponentsAndAction();
 PavementLayerTemplateXmlFileRoundTripsPavementTemplate();
 PavementLayerTemplateXmlFileRejectsMalformedXml();
 PavementLayerTemplateApplyUsesUniqueResponsePathContract();
