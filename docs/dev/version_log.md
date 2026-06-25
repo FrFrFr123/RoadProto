@@ -4,7 +4,7 @@
 
 - 阶段：整幅路路面结构层模板原型。
 - ARX 文件名规则：`RoadProto_v0.1.36_<构建时间戳>_FullRoadPavementTemplate.arx`。
-- 本次 Debug 验证生成：`artifacts/x64/Debug/RoadProto_v0.1.36_20260625_205001389_FullRoadPavementTemplate.arx`。
+- 本次 Debug 验证生成：`artifacts/x64/Debug/RoadProto_v0.1.36_20260625_220336610_FullRoadPavementTemplate.arx`。
 - 本次 Debug 托管插件：`artifacts/managed/Debug/net48/RoadProto.Terrain.UI.dll`。
 - 修改内容：
   - 新增 `FullRoadPavementTemplateModel` 和 `FullRoadPavementTemplateCreateService`，保存整幅路模板名称、显示比例、参考路基模板信息、部件快照和每部件内嵌结构层。
