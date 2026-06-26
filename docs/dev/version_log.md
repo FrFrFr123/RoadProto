@@ -5,6 +5,7 @@
 - 阶段：整幅路路面结构层模板原型。
 - ARX 文件名规则：`RoadProto_v0.1.36_<构建时间戳>_FullRoadPavementTemplate.arx`。
 - 本次 Debug 验证生成：`artifacts/x64/Debug/RoadProto_v0.1.36_20260625_220336610_FullRoadPavementTemplate.arx`。
+- 本次 Release 验证生成：`artifacts/x64/Release/RoadProto_v0.1.36_20260626_105047405_FullRoadPavementTemplate.arx`。
 - 本次 Debug 托管插件：`artifacts/managed/Debug/net48/RoadProto.Terrain.UI.dll`。
 - 修改内容：
   - 新增 `FullRoadPavementTemplateModel` 和 `FullRoadPavementTemplateCreateService`，保存整幅路模板名称、显示比例、参考路基模板信息、部件快照和每部件内嵌结构层。
@@ -23,7 +24,7 @@
   - 2026-06-25 补充修正整幅路 CAD 自定义实体显示：`DnFullRoadPavementTemplateEntity` 参考 `DnPavementLayerTemplateEntity` 的显示方法，对每个部件调用 `PavementLayerTemplateRules::buildSection` 生成真实结构层四边形，并绘制层色弱化填充、填充线和层色边线；实体范围同步纳入结构层加宽后的外扩点，避免 WPF 预览与 CAD 实体在厚度、加宽、坡度、颜色和填充显示上分叉。
   - 本次不接入道路模型、不接入横断面图生成、不接入工程量统计，不做 XML 导入导出，仅预留后续按 handle 读取整幅路模板数据的领域入口。
   - 新增整幅路路面结构层模板设计文档、实施计划、三份业务文档、复用说明，并同步模块说明、模块索引、复用能力目录、README 和版本信息。
-- 验证状态：核心测试 Debug 构建与运行通过；托管 Bridge 测试通过；WPF Debug 构建通过；`src/app/RoadProtoArx.vcxproj` Debug 构建通过，生成上方 ARX。2026-06-25 补充优化已通过核心测试 Debug 构建与运行、托管 Bridge 测试、WPF Debug 构建和 Debug ARX 构建。AutoCAD 图形界面点选参考路基模板、窗口交互和 DWG 保存重开仍待人工点验。
+- 验证状态：核心测试 Debug 构建与运行通过；托管 Bridge 测试通过；WPF Debug 构建通过；`src/app/RoadProtoArx.vcxproj` Debug 构建通过，生成上方 ARX。2026-06-25 补充优化已通过核心测试 Debug 构建与运行、托管 Bridge 测试、WPF Debug 构建和 Debug ARX 构建。2026-06-26 补充生成 Release ARX，`src/app/RoadProtoArx.vcxproj` Release 构建通过。AutoCAD 图形界面点选参考路基模板、窗口交互和 DWG 保存重开仍待人工点验。
 - 是否可作为稳定测试版本：否。当前为整幅路模板原型功能分支，未接入道路模型和横断面图生成链路。
 
 ## v0.1.35_20260624_AgentMvp
