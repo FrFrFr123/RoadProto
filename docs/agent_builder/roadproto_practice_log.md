@@ -474,6 +474,19 @@ RoadProto 已实现本地入口路由层：
 
 可复用结论：创建类任务里出现局部操作词，不代表要修改已有对象。凡是可创建、带完整初始参数的工程实体，都应支持“蓝本完整参数 + 开放参数 patch -> 新实体”的创建语义。参数 patch 的范围就是该实体 Schema 开放出来的可写参数，不能靠模型自由发挥，也不能让 Adapter 猜。
 
+### 2.31 后端运行资源不能依赖宿主工作目录
+
+问题：RoadProto 由 AutoCAD WPF 面板自动启动独立 Agent 后端时，进程路径指向发布目录，但工作目录可能继承 AutoCAD 或其他宿主目录。后端健康检查只依赖端口和基础路径，因此能返回 `healthy`；真正处理 `/api/agent/runs` 时才实例化 Skill / Intent 仓库，如果按 ASP.NET `ContentRoot` 或当前工作目录找 `rules/`，就会找不到 `subgrade_template` 规则并返回 HTTP 500。
+
+修正：
+
+- 后端规则目录解析优先使用显式配置，其次使用 `AppContext.BaseDirectory/rules`，再回退 `ContentRoot/rules` 和当前工作目录。
+- 前端 / 宿主启动独立后端时显式设置 `WorkingDirectory` 为后端 exe 所在目录。
+- 缺少必需 Skill 时返回带 rules root 和 skills directory 的明确异常信息，避免只看到 `Sequence contains no matching element`。
+- 回归测试覆盖 ContentRoot 与输出目录不一致时仍能从 bin / publish 目录找到规则。
+
+可复用结论：插件式宿主软件启动外部 Agent 服务时，健康检查不能只证明进程活着，还要证明运行资源可读。规则、模板、Prompt、Schema 这类运行资源应以 exe / bin / publish 所在目录或显式配置为锚点；宿主当前目录只能作为兜底，不能作为默认事实。
+
 ## 3. 当前仍需继续沉淀的问题
 
 - 入口路由层已完成 MVP 规则版实现，受控对话已加入运行时事实层；后续需要通过真实用户表达继续扩充样例和评测集。

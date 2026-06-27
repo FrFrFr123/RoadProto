@@ -61,6 +61,7 @@ public sealed class AgentBackendSupervisor
             Process.Start(new ProcessStartInfo
             {
                 FileName = _options.PublishExePath,
+                WorkingDirectory = Path.GetDirectoryName(_options.PublishExePath) ?? Environment.CurrentDirectory,
                 UseShellExecute = false,
                 CreateNoWindow = true,
                 WindowStyle = ProcessWindowStyle.Hidden,
@@ -77,6 +78,7 @@ public sealed class AgentBackendSupervisor
         {
             FileName = "dotnet",
             Arguments = $"run --project \"{_options.DevProjectPath}\"",
+            WorkingDirectory = Path.GetDirectoryName(_options.DevProjectPath) ?? Environment.CurrentDirectory,
             UseShellExecute = false,
             CreateNoWindow = true,
             WindowStyle = ProcessWindowStyle.Hidden,

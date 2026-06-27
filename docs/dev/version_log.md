@@ -4,7 +4,7 @@
 
 - 阶段：Agent 优化与主目录合并。
 - ARX 文件名规则：`RoadProto_v0.1.37_<构建时间戳>_AgentOptimization.arx`。
-- 本次 Release 验证生成：`artifacts/x64/Release/RoadProto_v0.1.37_20260627_105442064_AgentOptimization.arx`。
+- 本次 Release 验证生成：`artifacts/x64/Release/RoadProto_v0.1.37_20260627_111827502_AgentOptimization.arx`。
 - 本次 Release 托管插件：`artifacts/managed/Release/net48/RoadProto.Terrain.UI.dll`。
 - 修改内容：
   - 在主目录 `main` 保留 `v0.1.36 FullRoadPavementTemplate` 已有代码和文档的基础上，三方合入 `codex/agent-optimization` 已提交内容，并同步该 worktree 中未提交的 Agent 优化增量。
@@ -13,8 +13,9 @@
   - 路基模板 CRUD 链路增强目标定位、追问续跑、点选补目标、会话最近对象和部件级 `componentOperations`，减少空修改、误把部件名当模板名和分步修改丢目标的问题。
   - RoadProto 本地 Tool 请求协议继续收紧，固定 UTF-8 无 BOM 和 LF 换行，ObjectARX Adapter 读取 key-value 时剥离 BOM 并 trim 空白。
   - 新增 `CreateFromBase + ParameterPatch` 泛化规则，创建类请求中“基于原本 / 默认 / 现有蓝本”和局部“增加 / 修改 / 删除”表达仍保持创建语义，不修改蓝本对象。
+  - 修复主目录 Release 中 Agent 后端健康检查通过但 `/api/agent/runs` 返回 HTTP 500 的问题：后端规则目录改为优先从 exe / bin / publish 所在目录解析，WPF 自动启动后端时设置 `WorkingDirectory` 为发布目录，确保 `rules/skills` 和 `rules/intents` 能稳定加载。
   - 同步 `docs/agent/`、`docs/business/agent/`、`docs/agent_builder/`、`docs/reuse/`、测试说明和版本记录，明确 Agent 优化与跨项目可复用规则。
-- 验证状态：主目录无未合并冲突，`git diff --check` 通过；`dotnet build src\ui\wpf\RoadProto.Terrain.UI\RoadProto.Terrain.UI.csproj -c Release` 通过；`RoadProto.sln Release|x64` 通过，生成 `RoadProto_v0.1.37_20260627_105442064_AgentOptimization.arx`；`artifacts\x64\Release\RoadProtoCoreTests.exe` 通过；`dotnet run --project tests\RoadProtoManagedBridgeTests\RoadProtoManagedBridgeTests.csproj -c Release --no-restore` 通过。
+- 验证状态：主目录无未合并冲突，`git diff --check` 通过；`dotnet build src\ui\wpf\RoadProto.Terrain.UI\RoadProto.Terrain.UI.csproj -c Release` 通过；`RoadProto.sln Release|x64` 通过，生成 `RoadProto_v0.1.37_20260627_111827502_AgentOptimization.arx`；`artifacts\x64\Release\RoadProtoCoreTests.exe` 通过；`dotnet run --project tests\RoadProtoManagedBridgeTests\RoadProtoManagedBridgeTests.csproj -c Release --no-restore` 通过；后端 `dotnet test F:\0_GPT_RoadProtoAgentBackend\tests\RoadProtoAgentBackend.Tests\RoadProtoAgentBackend.Tests.csproj -c Release --no-restore --nologo` 通过 143/143；重新发布并启动 `F:\0_GPT_RoadProtoAgentBackend\artifacts\publish\RoadProtoAgentBackend.exe` 后，实测 `/api/agent/runs` 输入“你好”返回 `HTTP 200 / Succeeded / ChatOnly`，输入“创建路基模板”返回 `HTTP 200 / AwaitingUserInput`。
 - 是否可作为稳定测试版本：否。当前为 Agent 优化合并版本，AutoCAD 图形界面 Agent 面板真实点击和路基模板完整 Agent 执行链路仍待人工点验。
 
 ## v0.1.36_20260625_FullRoadPavementTemplate
