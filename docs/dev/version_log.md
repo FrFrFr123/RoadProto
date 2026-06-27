@@ -1,12 +1,28 @@
 # 版本记录
 
+## v0.1.37_20260627_AgentOptimization
+
+- 阶段：Agent 优化与主目录合并。
+- ARX 文件名规则：`RoadProto_v0.1.37_<构建时间戳>_AgentOptimization.arx`。
+- 本次 Release 验证生成：`artifacts/x64/Release/RoadProto_v0.1.37_20260627_105442064_AgentOptimization.arx`。
+- 本次 Release 托管插件：`artifacts/managed/Release/net48/RoadProto.Terrain.UI.dll`。
+- 修改内容：
+  - 在主目录 `main` 保留 `v0.1.36 FullRoadPavementTemplate` 已有代码和文档的基础上，三方合入 `codex/agent-optimization` 已提交内容，并同步该 worktree 中未提交的 Agent 优化增量。
+  - Agent Palette 稳定停靠与自适应：默认恢复 AutoCAD 原生停靠容器，采用最小 WPF 宿主延迟挂载安全面板，支持右侧停靠、吸附和拖动窗口时自适应填满。
+  - WPF Agent Console 新增当前 CAD 选择上下文采集，支持“修改选中的模板 / 当前选中路基模板”直接使用唯一选中的 `DnSubgradeTemplateEntity`。
+  - 路基模板 CRUD 链路增强目标定位、追问续跑、点选补目标、会话最近对象和部件级 `componentOperations`，减少空修改、误把部件名当模板名和分步修改丢目标的问题。
+  - RoadProto 本地 Tool 请求协议继续收紧，固定 UTF-8 无 BOM 和 LF 换行，ObjectARX Adapter 读取 key-value 时剥离 BOM 并 trim 空白。
+  - 新增 `CreateFromBase + ParameterPatch` 泛化规则，创建类请求中“基于原本 / 默认 / 现有蓝本”和局部“增加 / 修改 / 删除”表达仍保持创建语义，不修改蓝本对象。
+  - 同步 `docs/agent/`、`docs/business/agent/`、`docs/agent_builder/`、`docs/reuse/`、测试说明和版本记录，明确 Agent 优化与跨项目可复用规则。
+- 验证状态：主目录无未合并冲突，`git diff --check` 通过；`dotnet build src\ui\wpf\RoadProto.Terrain.UI\RoadProto.Terrain.UI.csproj -c Release` 通过；`RoadProto.sln Release|x64` 通过，生成 `RoadProto_v0.1.37_20260627_105442064_AgentOptimization.arx`；`artifacts\x64\Release\RoadProtoCoreTests.exe` 通过；`dotnet run --project tests\RoadProtoManagedBridgeTests\RoadProtoManagedBridgeTests.csproj -c Release --no-restore` 通过。
+- 是否可作为稳定测试版本：否。当前为 Agent 优化合并版本，AutoCAD 图形界面 Agent 面板真实点击和路基模板完整 Agent 执行链路仍待人工点验。
+
 ## v0.1.36_20260625_FullRoadPavementTemplate
 
 - 阶段：整幅路路面结构层模板原型。
 - ARX 文件名规则：`RoadProto_v0.1.36_<构建时间戳>_FullRoadPavementTemplate.arx`。
 - 本次 Debug 验证生成：`artifacts/x64/Debug/RoadProto_v0.1.36_20260625_220336610_FullRoadPavementTemplate.arx`。
 - 本次 Release 验证生成：`artifacts/x64/Release/RoadProto_v0.1.36_20260626_105047405_FullRoadPavementTemplate.arx`。
-- 本次 Agent 优化合并 Release 验证生成：`artifacts/x64/Release/RoadProto_v0.1.36_20260627_104748074_FullRoadPavementTemplate.arx`。
 - 本次 Debug 托管插件：`artifacts/managed/Debug/net48/RoadProto.Terrain.UI.dll`。
 - 本次 Release 托管插件：`artifacts/managed/Release/net48/RoadProto.Terrain.UI.dll`。
 - 修改内容：
@@ -24,10 +40,9 @@
   - 2026-06-25 补充修复整幅路窗口输入和预览问题：结构层输入框编辑时不再因即时刷新吞掉小数点；取消加宽/坡度内外一致后立即显示内侧和外侧两行；预览中单独绘制路缘石实体，中分带和侧分带顶线保持平整。
   - 2026-06-25 补充对齐路基模板路缘石定义：整幅路 WPF 预览和 `DnFullRoadPavementTemplateEntity` 均按路基模板规则绘制路缘石，宽度在当前部件内部表达，顶部贴合部件顶线，高度驱动相邻部件高差，埋深向下显示；WPF 预览增加部件宽度、坡度和路缘石宽度/高度/埋深尺寸文字，CAD 实体中心标记改为 `中线`。
   - 2026-06-25 补充修正整幅路 CAD 自定义实体显示：`DnFullRoadPavementTemplateEntity` 参考 `DnPavementLayerTemplateEntity` 的显示方法，对每个部件调用 `PavementLayerTemplateRules::buildSection` 生成真实结构层四边形，并绘制层色弱化填充、填充线和层色边线；实体范围同步纳入结构层加宽后的外扩点，避免 WPF 预览与 CAD 实体在厚度、加宽、坡度、颜色和填充显示上分叉。
-  - 2026-06-27 补充：在主目录 `main` 保留 `v0.1.36 FullRoadPavementTemplate` 已有代码和文档的基础上，三方合入 `codex/agent-optimization` 已提交内容，并同步该 worktree 中未提交的 Agent 优化增量；重点包含 Agent Palette 稳定停靠与自适应、安全面板、当前 CAD 选择上下文、路基模板 CRUD 目标定位与部件级操作、本地 Tool 请求协议、`CreateFromBase + ParameterPatch` 泛化规则和相关 Agent Builder 文档。
   - 本次不接入道路模型、不接入横断面图生成、不接入工程量统计，不做 XML 导入导出，仅预留后续按 handle 读取整幅路模板数据的领域入口。
   - 新增整幅路路面结构层模板设计文档、实施计划、三份业务文档、复用说明，并同步模块说明、模块索引、复用能力目录、README 和版本信息。
-- 验证状态：核心测试 Debug 构建与运行通过；托管 Bridge 测试通过；WPF Debug 构建通过；`src/app/RoadProtoArx.vcxproj` Debug 构建通过，生成上方 ARX。2026-06-25 补充优化已通过核心测试 Debug 构建与运行、托管 Bridge 测试、WPF Debug 构建和 Debug ARX 构建。2026-06-26 补充生成 Release ARX，`src/app/RoadProtoArx.vcxproj` Release 构建通过；补充生成 Release 托管插件，确认 DLL 包含 `整幅路路面结构层模板` 按钮文本和 `FullRoadPavementTemplateDialogCommands` 命令类。2026-06-27 Agent 优化合并后，主目录无未合并冲突，`git diff --check` 通过；`dotnet build src\ui\wpf\RoadProto.Terrain.UI\RoadProto.Terrain.UI.csproj -c Release` 通过；`RoadProto.sln Release|x64` 通过，生成 `RoadProto_v0.1.36_20260627_104748074_FullRoadPavementTemplate.arx`；`artifacts\x64\Release\RoadProtoCoreTests.exe` 通过；`dotnet run --project tests\RoadProtoManagedBridgeTests\RoadProtoManagedBridgeTests.csproj -c Release --no-restore` 通过。AutoCAD 图形界面点选参考路基模板、窗口交互、DWG 保存重开和 Agent 面板真实点击仍待人工点验。
+- 验证状态：核心测试 Debug 构建与运行通过；托管 Bridge 测试通过；WPF Debug 构建通过；`src/app/RoadProtoArx.vcxproj` Debug 构建通过，生成上方 ARX。2026-06-25 补充优化已通过核心测试 Debug 构建与运行、托管 Bridge 测试、WPF Debug 构建和 Debug ARX 构建。2026-06-26 补充生成 Release ARX，`src/app/RoadProtoArx.vcxproj` Release 构建通过；补充生成 Release 托管插件，确认 DLL 包含 `整幅路路面结构层模板` 按钮文本和 `FullRoadPavementTemplateDialogCommands` 命令类。AutoCAD 图形界面点选参考路基模板、窗口交互和 DWG 保存重开仍待人工点验。
 - 是否可作为稳定测试版本：否。当前为整幅路模板原型功能分支，未接入道路模型和横断面图生成链路。
 
 ## v0.1.35_20260624_AgentMvp

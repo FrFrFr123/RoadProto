@@ -19,10 +19,10 @@ AI 或 Codex 进入项目时，应先阅读根目录 `AGENTS.md`。`README.md` �
 
 ## 当前版本
 
-- 版本：`v0.1.36`
-- 构建日期：`20260625`
-- 阶段：`FullRoadPavementTemplate`
-- ARX 文件名：`RoadProto_v0.1.36_<构建时间戳>_FullRoadPavementTemplate.arx`
+- 版本：`v0.1.37`
+- 构建日期：`20260627`
+- 阶段：`AgentOptimization`
+- ARX 文件名：`RoadProto_v0.1.37_<构建时间戳>_AgentOptimization.arx`
 - 命名规则：每次编译都会生成带 `yyyyMMdd_HHmmssfff` 时间戳的新 ARX 文件名，不覆盖 Release/Debug 目录下已有 ARX。
 - 托管 Ribbon 插件：`RoadProto.Terrain.UI.dll`
 - 输出目录：
@@ -236,7 +236,7 @@ dotnet build src\ui\wpf\RoadProto.Terrain.UI\RoadProto.Terrain.UI.csproj -c Rele
 在 AutoCAD 2021 中手动验证当前 RoadProto 流程：
 
 ```text
-ARXLOAD artifacts\x64\Release\RoadProto_v0.1.36_<构建时间戳>_FullRoadPavementTemplate.arx
+ARXLOAD artifacts\x64\Release\RoadProto_v0.1.37_<构建时间戳>_AgentOptimization.arx
 NETLOAD artifacts\managed\Release\net48\RoadProto.Terrain.UI.dll
 ```
 

@@ -2,9 +2,9 @@
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <RoadProtoRoot>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\'))</RoadProtoRoot>
-    <RoadProtoVersion>v0.1.36</RoadProtoVersion>
-    <RoadProtoBuildDate>20260625</RoadProtoBuildDate>
-    <RoadProtoStage>FullRoadPavementTemplate</RoadProtoStage>
+    <RoadProtoVersion>v0.1.37</RoadProtoVersion>
+    <RoadProtoBuildDate>20260627</RoadProtoBuildDate>
+    <RoadProtoStage>AgentOptimization</RoadProtoStage>
     <RoadProtoBuildTimestamp Condition="'$(RoadProtoBuildTimestamp)' == ''">$([System.DateTime]::Now.ToString('yyyyMMdd_HHmmssfff'))</RoadProtoBuildTimestamp>
     <RoadProtoArxBaseName>RoadProto_$(RoadProtoVersion)_$(RoadProtoBuildTimestamp)_$(RoadProtoStage)</RoadProtoArxBaseName>
     <RoadProtoArtifactsDir>$(RoadProtoRoot)artifacts\x64\$(Configuration)\</RoadProtoArtifactsDir>

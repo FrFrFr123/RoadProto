@@ -124,9 +124,9 @@ void pavementLayerTemplateDocumentationAndVersionContracts()
     const auto root = findRepositoryRootForTests();
 
     const auto buildProps = readTextFileForTests(root / "build" / "RoadProto.Build.props");
-    CHECK(buildProps.find("<RoadProtoVersion>v0.1.36</RoadProtoVersion>") != std::string::npos);
-    CHECK(buildProps.find("<RoadProtoBuildDate>20260625</RoadProtoBuildDate>") != std::string::npos);
-    CHECK(buildProps.find("<RoadProtoStage>FullRoadPavementTemplate</RoadProtoStage>") != std::string::npos);
+    CHECK(buildProps.find("<RoadProtoVersion>v0.1.37</RoadProtoVersion>") != std::string::npos);
+    CHECK(buildProps.find("<RoadProtoBuildDate>20260627</RoadProtoBuildDate>") != std::string::npos);
+    CHECK(buildProps.find("<RoadProtoStage>AgentOptimization</RoadProtoStage>") != std::string::npos);
     CHECK(buildProps.find("<RoadProtoBuildTimestamp Condition=\"'$(RoadProtoBuildTimestamp)' == ''\">$([System.DateTime]::Now.ToString('yyyyMMdd_HHmmssfff'))</RoadProtoBuildTimestamp>") != std::string::npos);
     CHECK(buildProps.find("<RoadProtoArxBaseName>RoadProto_$(RoadProtoVersion)_$(RoadProtoBuildTimestamp)_$(RoadProtoStage)</RoadProtoArxBaseName>") != std::string::npos);
 
@@ -185,14 +185,17 @@ void pavementLayerTemplateDocumentationAndVersionContracts()
     CHECK(versionLog.find("RoadProto_v0.1.35_<构建时间戳>_AgentMvp.arx") != std::string::npos);
     CHECK(versionLog.find("v0.1.36_20260625_FullRoadPavementTemplate") != std::string::npos);
     CHECK(versionLog.find("RoadProto_v0.1.36_<构建时间戳>_FullRoadPavementTemplate.arx") != std::string::npos);
+    CHECK(versionLog.find("v0.1.37_20260627_AgentOptimization") != std::string::npos);
+    CHECK(versionLog.find("RoadProto_v0.1.37_<构建时间戳>_AgentOptimization.arx") != std::string::npos);
     CHECK(versionLog.find("整幅路路面结构层模板原型") != std::string::npos);
+    CHECK(versionLog.find("Agent Palette 稳定停靠与自适应") != std::string::npos);
     CHECK(versionLog.find("每次编译都会生成带 `yyyyMMdd_HHmmssfff` 时间戳的新 ARX 文件名") != std::string::npos);
     CHECK(versionLog.find("SectionDrawingConfigModel") != std::string::npos);
     CHECK(versionLog.find("PavementQuantityDrawingFaceSampler") != std::string::npos);
     CHECK(versionLog.find("manualEdited=true") != std::string::npos);
 
     const auto readme = readTextFileForTests(root / "README.md");
-    CHECK(readme.find("RoadProto_v0.1.36_<构建时间戳>_FullRoadPavementTemplate.arx") != std::string::npos);
+    CHECK(readme.find("RoadProto_v0.1.37_<构建时间戳>_AgentOptimization.arx") != std::string::npos);
     CHECK(readme.find("每次编译都会生成带 `yyyyMMdd_HHmmssfff` 时间戳的新 ARX 文件名") != std::string::npos);
     CHECK(readme.find("RD_SECTION_PAVEMENT_LAYER_TEMPLATE_CREATE") != std::string::npos);
     CHECK(readme.find("RD_SECTION_DRAWING_CONFIG") != std::string::npos);
