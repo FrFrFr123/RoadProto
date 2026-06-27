@@ -36,8 +36,9 @@
 - 帮我创建高速公路路基模板。
 - 帮我创建路基模板，行车道比默认参数增加 1 米。其他参数按默认配置。
 - 新建一个城市快速路路基模板，硬路肩宽度按 3 米。
-- 做一个二级道路路基模板，左右土路肩都用 0.75 米。
+- 做一个二级公路路基模板，左右土路肩都用 0.75 米。
 - 创建路基模板，名称叫主线路基模板，显示比例 1:10。
+- 创建路基模板，基于原本的路基模板，最右侧增加一个 10 米的行车道。
 
 不应匹配的表达：
 
@@ -57,13 +58,14 @@
 - 创建新的路基模板。
 - 根据 Agent 规则文件和道路等级语义加载默认参数。
 - 根据用户输入覆盖部分参数。
+- 处理“基于原本 / 默认模板再局部调整”的派生创建，局部“增加 / 修改 / 删除”只作为新模板参数补丁，不修改蓝本模板。
 - 生成模板预览数据。
 - 生成写入前确认信息。
 - 在用户确认后调用 RoadProto 本地工具创建 `DnSubgradeTemplateEntity`。
 
 本意图不负责：
 
-- 修改已有模板。
+- 修改已有模板。除非用户明确说“修改原模板 / 直接改这个模板”，否则“基于原本模板创建并增加某部件”仍属于创建意图。
 - 删除模板。
 - 执行戴帽设计。
 - 土石方计算。
@@ -88,13 +90,13 @@
 | 值 | 中文含义 |
 | --- | --- |
 | `Expressway` | 高速公路 |
-| `FirstClass` | 一级道路 |
-| `SecondClass` | 二级道路 |
-| `ThirdClass` | 三级道路 |
-| `FourthClass` | 四级道路 |
+| `FirstClass` | 一级公路 |
+| `SecondClass` | 二级公路 |
+| `ThirdClass` | 三级公路 |
+| `FourthClass` | 四级公路 |
 | `UrbanExpressway` | 城市快速路 |
-| `UrbanArterial` | 城市主干道 |
-| `UrbanSubArterial` | 城市次干道 |
+| `UrbanArterial` | 城市主干路 / 城市主干道 |
+| `UrbanSubArterial` | 城市次干路 / 城市次干道 |
 | `UrbanBranch` | 城市支路 |
 
 ### components 最小结构
@@ -150,6 +152,13 @@
 | `pavementLayerTemplateRef` / 路面结构层模板引用 | object | 空 | 包含 handle、名称、厚度；需要 CAD 点选绑定 |
 | `colorOverride` / 颜色覆盖 | RGB / ACI | 按部件默认色 | 用户明确指定颜色时才覆盖 |
 | `sideScope` / 作用侧 | `Left` / `Right` / `Both` | Agent 规则文件 | 用户说“左侧行车道加宽”时只作用左侧 |
+| `baseRef` / 创建蓝本引用 | object / enum | 默认规则或上下文 | 用户说“基于原本 / 默认 / 刚才那个 / 现有模板”时使用 |
+| `componentOperation` / 部件操作 | enum | 用户明确补丁 | 创建派生模板时可为 `addComponent`、`modifyComponent`、`deleteComponent` |
+| `componentType` / 部件类型 | enum | 用户明确补丁或规则兜底 | 如 `TravelLane`、`HardShoulder`、`Sidewalk` |
+| `anchorComponentType` / 锚定部件 | enum | 用户明确补丁 | 如“行车道外侧新增人行道”中的行车道 |
+| `positionMode` / 插入位置 | enum | 用户明确补丁或位置词归一化 | 如 `OutsideOf`、`InsideOf`、`Before`、`After`；“最右侧 / 最左侧”归一化为外侧插入 |
+| `width` / 部件宽度 | number | 用户明确补丁 | 新增或修改部件时使用，例如 10 米 |
+| `widthDelta` / 部件宽度增量 | number | 用户明确补丁 | 表达“加宽 1 米”时基于蓝本部件宽度增量应用 |
 
 当前 MVP 的核心创建默认值由外置后端规则文件控制：
 
@@ -157,20 +166,21 @@
 F:\0_GPT_RoadProtoAgentBackend\rules\intents\subgrade_template.create.yaml
 ```
 
-该文件采用组件级默认值：`templateName`、`displayScale`、`unit` 是参数级默认；道路等级对应的完整部件列表由规则文件 `defaultComponentsByRoadGrade` 提供。RoadProto 本地 Tool Adapter 不再补默认组件；若后端规则没有下发必需值，RoadProto 本地只返回校验失败。高速公路 `Expressway` 必须下发 8 个部件，顺序和 RoadProto 原生“路基模板-高速公路”预设一致：
+该文件采用组件级默认值：`templateName`、`displayScale`、`unit` 是参数级默认；道路等级对应的完整部件列表由规则文件 `defaultComponentsByRoadGrade` 提供。RoadProto 本地 Tool Adapter 不再补默认组件；若后端规则没有下发必需值，RoadProto 本地只返回校验失败。各道路等级默认部件必须与 RoadProto 原生 `SubgradeTemplateDefaults::create` 一致，单侧顺序均为从道路中线向外，右侧同序对称：
 
-| 顺序 | 侧别 | 类型 | 宽度 | 固定坡度 | RGB | 路缘石 |
-| ---: | --- | --- | ---: | ---: | --- | --- |
-| 1 | Left | Median | 1.5 | 0 | 204,153,0 | 外侧启用 0.15 / 0.15 / 0.15 |
-| 2 | Left | TravelLane | 7.5 | 0.02 | 204,102,0 | 无 |
-| 3 | Left | HardShoulder | 3.0 | 0.02 | 204,51,0 | 无 |
-| 4 | Left | EarthShoulder | 0.75 | 0.03 | 204,0,0 | 无 |
-| 5 | Right | Median | 1.5 | 0 | 204,204,0 | 外侧启用 0.15 / 0.15 / 0.15 |
-| 6 | Right | TravelLane | 7.5 | -0.02 | 153,204,0 | 无 |
-| 7 | Right | HardShoulder | 3.0 | -0.02 | 102,204,0 | 无 |
-| 8 | Right | EarthShoulder | 0.75 | -0.03 | 51,204,0 | 无 |
+| 道路等级编码 | 单侧默认部件，从中线向外 | 总部件数 |
+| --- | --- | ---: |
+| `Expressway` | `Median 1.5`、`TravelLane 7.5`、`HardShoulder 3.0`、`EarthShoulder 0.75` | 8 |
+| `FirstClass` | `Median 1.0`、`TravelLane 3.75`、`TravelLane 3.75`、`HardShoulder 2.5`、`EarthShoulder 0.75` | 10 |
+| `SecondClass` | `TravelLane 3.75`、`HardShoulder 1.5`、`EarthShoulder 0.75` | 6 |
+| `ThirdClass` | `TravelLane 3.5`、`HardShoulder 0.75`、`EarthShoulder 0.75` | 6 |
+| `FourthClass` | `TravelLane 3.0`、`HardShoulder 0.25`、`EarthShoulder 0.5` | 6 |
+| `UrbanExpressway` | `Median 1.0`、`TravelLane 7.5`、`SideMedian 1.0`、`BikeLane 3.0`、`Sidewalk 4.0` | 10 |
+| `UrbanArterial` | `Median 1.5`、`TravelLane 3.5`、`TravelLane 3.5`、`SideMedian 1.5`、`BikeLane 2.5`、`Sidewalk 3.0` | 12 |
+| `UrbanSubArterial` | `TravelLane 3.5`、`TravelLane 3.5`、`BikeLane 2.5`、`Sidewalk 3.0` | 8 |
+| `UrbanBranch` | `TravelLane 3.25`、`Sidewalk 2.0` | 4 |
 
-所有高速默认部件的 `height` 为 `0`，`slopeMode` 为 `Fixed`，`wideningTable` 和 `variableSlopeTable` 为空，内侧路缘石默认未启用，路面结构层引用默认未绑定。
+所有默认部件的 `height` 为 `0`，`slopeMode` 为 `Fixed`，`wideningTable` 和 `variableSlopeTable` 为空，内侧路缘石默认未启用，路面结构层引用默认未绑定。所有默认中分带 `Median` 的外侧路缘石启用，宽度、高度和埋深均为 `0.15`。
 
 `totalWidth` 是派生展示值。用户只说“路基总宽 26 米”时，Agent 不得自行拆分各部件宽度，必须追问希望调整哪些部件，或使用专门的总宽分配规则。
 
@@ -183,11 +193,9 @@ F:\0_GPT_RoadProtoAgentBackend\rules\intents\subgrade_template.create.yaml
 - 未提及参数保持默认配置。
 - 默认值补全由规则层完成，不由 LLM 自行臆造，也不由 RoadProto 本地 Tool Adapter 兜底。
 - RoadProto 本地只负责执行和校验：缺少道路等级、模板名称、显示比例、单位或组件列表时返回失败，不猜测默认值。
-- 空白新建请求默认按高速公路模板打开；Agent 意图识别阶段仍应优先追问道路等级，除非当前交互策略明确允许使用高速公路默认值。
-- 高速公路默认部件包含左侧中分带、行车道、硬路肩、土路肩，并右侧对称。
-- 城市快速路默认部件包含左侧中分带、行车道、侧分带、慢车道、人行道，并右侧对称。
-- 二级、三级、四级道路默认部件包含行车道、硬路肩、土路肩，并右侧对称。
-- 一级道路、城市主干道、城市次干道和城市支路必须生成左右对称的非空默认模板。
+- 空白新建请求仍应优先追问道路等级；但用户明确说“基于原本 / 默认路基模板”时，当前 MVP 使用规则默认蓝本继续创建，默认蓝本编码为 `Expressway`，再应用用户给出的局部参数补丁。
+- 派生创建按 `CreateFromBase + ParameterPatch` 执行：先得到完整蓝本 `Components`，再应用 `componentOperations` 或标量覆盖项，最后调用 `SubgradeTemplate.Create`。蓝本模板本身不被写入。
+- `Expressway`、`FirstClass`、`SecondClass`、`ThirdClass`、`FourthClass`、`UrbanExpressway`、`UrbanArterial`、`UrbanSubArterial`、`UrbanBranch` 必须均生成左右对称的非空默认模板。
 - 默认模板初始部件不包含路缘带，`CurbStrip` 只作为用户手动新增类型保留。
 - 默认模板中出现的中分带部件，外侧路缘石默认启用，宽度、高度和埋深均为 `0.15`。
 - 默认坡度按左右侧写入：左侧行车道、硬路肩、路缘带为 `0.02`，右侧为 `-0.02`；左侧土路肩为 `0.03`，右侧为 `-0.03`；其他部件默认 `0`。
@@ -223,6 +231,7 @@ F:\0_GPT_RoadProtoAgentBackend\rules\intents\subgrade_template.create.yaml
 - 用户只给出路基总宽，但没有说明调整哪些部件。
 - 用户说“加宽”“减窄”，但没有说明作用部件。
 - 用户说“左侧”“右侧”以外的侧向范围不清楚，且默认 `Both` 会改变风险。
+- 派生创建中蓝本引用不唯一，例如“基于现有模板”但场景中有多个模板，且没有最近上下文、名称、handle 或点选结果。
 - 用户要求绑定路面结构层模板，但没有点选模板实体。
 - 用户要求修改已有模板、删除模板、戴帽、出图等不属于本意图的动作。
 
@@ -291,10 +300,13 @@ F:\0_GPT_RoadProtoAgentBackend\rules\intents\subgrade_template.create.yaml
 - WPF 负责展示参数、预览、追问、用户修改和最终确认。
 - RoadProto 本地 `AGENT` 模块负责把后端 Tool 调用转成受控的本地执行请求。
 - C++ ObjectARX Adapter 负责点取插入点、调用现有路基模板桥接能力并写入 `DnSubgradeTemplateEntity`。
+- C++ ObjectARX Adapter 创建成功后应刷新显示并把当前视口聚焦到新建 `DnSubgradeTemplateEntity`，避免用户确认成功后仍看不到新模板位置。
 - 外置后端不能直接写 DWG。
 - WPF 不能直接操作 `AcDbEntity`、`AcDbObjectId`、`ads_name` 等 ObjectARX 类型。
 
 当前 MVP 已将创建类 Tool 参数升级为组件级 DTO。后端规则层下发 `Components`，RoadProto 本地 Adapter 将每个组件映射为 `SubgradeComponentDto`，并保留宽度、高度、固定坡度、坡度模式、颜色、变宽表、坡度变化表、内外侧路缘石和路面结构层引用字段。
+
+创建类 Tool 也支持由后端规则层先应用 `componentOperations`。例如“基于原本的路基模板，最右侧增加一个 10 米的行车道”会先生成默认蓝本完整 `Components`，再新增一条 `Right / TravelLane / width=10` 部件，最终仍调用 `SubgradeTemplate.Create`，不会调用 `SubgradeTemplate.Modify` 修改原模板。
 
 ## 11. 执行结果
 
@@ -302,6 +314,7 @@ F:\0_GPT_RoadProtoAgentBackend\rules\intents\subgrade_template.create.yaml
 
 - 模板创建成功。
 - 模板 ID / CAD 实体 handle。
+- AutoCAD 当前视口已聚焦到新建模板实体。
 - 模板名称。
 - 插入点。
 - 模板预览数据。

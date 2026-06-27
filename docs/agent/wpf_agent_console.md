@@ -1,8 +1,8 @@
-# WPF 可停靠 Agent Console 交互规范
+# WPF Agent Console 交互规范
 
 ## 定位
 
-Agent Console 是 RoadProto 中可控工程 Agent 的唯一前端交互入口。MVP 不建设独立 Web 页面，不嵌入 WebView，也不把后台配置平台放进浏览器。所有用户输入、模型设置、参数确认、DryRun 预览、审批、流转日志和 Trace 查看都放在 AutoCAD 内的 WPF 可停靠 Palette / 面板中。
+Agent Console 是 RoadProto 中可控工程 Agent 的唯一前端交互入口。MVP 不建设独立 Web 页面，不嵌入 WebView，也不把后台配置平台放进浏览器。所有用户输入、模型设置、参数确认、DryRun 预览、审批、流转日志和 Trace 查看都放在 AutoCAD 内的 WPF 面板中。AutoCAD 2021 当前采用 AutoCAD `PaletteSet` 承载，默认停靠在右侧侧边栏，并启用吸附能力。
 
 交互与视觉参考：
 
@@ -26,27 +26,40 @@ Ribbon 位置规划：
 RoadProto / 工程 Agent / Agent 控制台
 ```
 
-打开后显示 AutoCAD 可停靠 WPF 面板。面板默认停靠在 AutoCAD 右侧，初始宽度应足够展示模型设置、聊天内容和流转日志；用户可以停靠、浮动、关闭和重新打开。
+打开后显示 AutoCAD 内 WPF Agent Console。AutoCAD 2021 当前实测稳定路径为 `PaletteSet` 可停靠面板，初始尺寸为 `560x720`，最小尺寸为 `480x560`，默认 `DockSides.Right`，允许左右侧停靠和吸附；用户可以关闭并重新打开。
 
-## AutoCAD 2021 Palette 承载规则
+## AutoCAD 2021 宿主承载规则
 
-AutoCAD 2021 中 Agent Console 必须使用 AutoCAD 原生 `PaletteSet.AddVisual` 承载 WPF，但不得把完整复杂 `AgentConsolePalette` 直接传给 `AddVisual`，也不得通过 `ElementHost` / WinForms 互操作把 WPF 控件直接塞进 Palette。实测这两种路径都可能在点击 Ribbon 打开面板时导致 AutoCAD 宿主崩溃或卡死。
+AutoCAD 2021 中 Agent Console 默认使用 AutoCAD 原生 `PaletteSet`，但不得把完整复杂 `AgentConsolePalette` XAML 控件直接交给宿主。实测 `ElementHost` 加入 Palette 会卡死，完整复杂 `AgentConsolePalette` 直接或延迟加入 Palette / modeless Window 后都会导致 AutoCAD 宿主崩溃。当前稳定方案是 `PaletteSet` + 最小 WPF 宿主 `Grid` + 代码构建的安全面板 `AgentConsoleSafePanel`。
+
+Ribbon 按钮点击不得直接在 Ribbon 事件回调中实例化 `AgentConsoleCommands` 或创建任何 WPF 窗口。按钮只允许通过 `SendStringToExecute` 排队发送 `RD_AGENT_CONSOLE`，由原生 ObjectARX 命令负责确认托管插件已加载，再转发到托管 `RD_AGENT_CONSOLE_UI`。这样可以避免 Ribbon UI 事件、命令加载、窗口创建和 WPF 初始化在同一宿主回调栈中重入。
 
 稳定实现顺序为：
 
-1. 创建 `PaletteSet`。
-2. 创建空的 WPF 宿主容器，例如 `Grid`。
-3. 先调用 `PaletteSet.AddVisual("Agent", hostGrid, false)` 注册空宿主。
-4. 再创建完整 `AgentConsolePalette`。
-5. 调用 `hostGrid.Children.Add(agentConsolePalette)` 挂载完整面板。
-6. 最后设置 `Visible = true`、`Dock = DockSides.Right` 并 `Activate(0)`。
+1. 创建 `PaletteSet("Agent 控制台")`，设置 `Size = 560x720`、`MinimumSize = 480x560`、`DockEnabled = Left | Right`。
+2. 设置 `PaletteSetStyles.Snappable`、`SingleColDock`、关闭按钮、自动隐藏按钮和属性菜单。
+3. 创建最小安全启动内容，只包含轻量 `Grid` / `TextBlock`。
+4. 调用 `PaletteSet.AddVisual("Agent", hostGrid, false)` 注册 WPF 宿主。
+5. 设置 `Visible = true`，再设置 `Dock = DockSides.Right` 并调用 `Activate(0)`。
+6. 在 `hostGrid.Dispatcher.BeginInvoke(..., DispatcherPriority.ContextIdle)` 中延迟创建 `AgentConsoleSafePanel`。
+7. 挂载安全面板前清空启动宿主的 `RowDefinitions` / `ColumnDefinitions`，移除启动外边距，并把宿主和面板都设置为 `Stretch`。
+8. 监听 `PaletteSet.SizeChanged`，用 `PaletteSet.PaletteSize` 回退到 `PaletteSet.Size` 显式更新 `hostGrid.Width / Height` 和 `AgentConsoleSafePanel.Width / Height`。
+9. 调用 `hostGrid.Children.Clear()` 和 `hostGrid.Children.Add(panel)` 挂载安全面板，并立即按当前 Palette 尺寸同步一次。
 
-该规则属于 AutoCAD 宿主兼容性要求。后续重构 Agent Console 时，不得改回 `AddVisual("Agent", new AgentConsolePalette())` 或 `PaletteSet.Add("Agent", new ElementHost { Child = ... })`。
+该规则属于 AutoCAD 宿主兼容性要求。后续重构 Agent Console 时，不得改回 `AddVisual("Agent", new AgentConsolePalette())`、`PaletteSet.Add("Agent", new ElementHost { Child = ... })`、`window.Content = new AgentConsolePalette()`，也不得把默认入口降级为不可停靠的 modeless Window；除非重新完成真实宿主点击、关闭、重开和停靠验证。Ribbon 点击事件也不得直接调用 `ShowAgentConsole()`。
+
+面板启动探针写入：
+
+```text
+F:\0_GPT_RoadProtoAgentRuntime\logs\roadproto\agent_palette_startup_probe.log
+```
+
+探针至少覆盖 `RD_AGENT_CONSOLE_UI` 入口、`PaletteSet` 创建、最小 WPF 宿主注册、`Visible / Dock / Activate`、延迟挂载调度、`AgentConsoleSafePanel` 构建、`Loaded` 和 `ViewModel.InitializeAsync` 前后。若宿主仍崩溃，应优先根据该文件定位最后成功阶段。
 
 ## 面板启动流程
 
 1. 用户运行 `RD_AGENT_CONSOLE` 或点击 Ribbon 按钮。
-2. RoadProto 创建或激活 WPF 可停靠 Agent Console。
+2. RoadProto 创建或激活右侧停靠的 WPF Agent Console Palette。
 3. 面板进入 `BackendHealthChecking` 状态。
 4. RoadProto 请求 `http://127.0.0.1:17861/health`。
 5. 若后端不可用，按配置启动 `F:\0_GPT_RoadProtoAgentBackend\artifacts\publish\RoadProtoAgentBackend.exe`。
@@ -141,9 +154,13 @@ API Key 由后端使用 Windows DPAPI 加密。WPF 不保存密钥文件，不�
 - 后端状态变化可以作为系统消息进入流转日志，不混入最终工程结论。
 - 支持内嵌选项按钮，例如“继续修改参数”“重新 DryRun”“确认执行”“取消任务”。
 - 输入框支持 Enter 发送。当前 MVP 输入框自动随宽度换行显示，发送成功后必须清空并异步重新聚焦，减少 AutoCAD 命令行抢焦点。
+- WPF 必须保存后端返回的 `SessionId`，后续普通新输入继续用同一个会话发起 `StartRun`。只有同一会话贯穿创建、确认、工具结果回传和后续修改，后端才能把“这个路基模板”“刚才创建的模板”“把两侧行车道宽度改为 10”解析到最近创建或最近修改的模板。
+- 用户表达包含“选中的模板 / 当前选中路基模板 / selected template”等强选择集指代时，WPF 在发送请求前读取 AutoCAD implied selection。只有选择集中唯一对象是 `DnSubgradeTemplateEntity` 时，才把该实体 handle 作为 `currentTemplateHandle` 传给后端；普通泛称“修改路基模板”不得携带当前选择上下文，避免用户只是泛称时误改选中或最近对象。
+- 当后端处于 `AwaitingUserInput` 且追问内容是在确认“哪个路基模板目标”时，WPF 应在聊天流中显示“点选”按钮，同时保留输入框。用户可以输入模板名称，也可以点击“点选”从 CAD 图中选择 `DnSubgradeTemplateEntity`；点选成功后，WPF 使用选择到的 handle 作为 `currentTemplateHandle` 调用补充输入接口，并在聊天流显示“点选路基模板”。
 - 面板打开和控件获得焦点时不得同步强制 `Focus` / `Keyboard.Focus`，避免 AutoCAD Palette 宿主焦点重入。只允许在用户点击输入框、发送完成或取消完成后异步恢复输入焦点。
+- `AgentConsoleSafePanel` 必须填满 Palette 宿主区域。不得让启动占位内容的 `Auto` 行定义、外边距或固定高度继续约束正式面板；聊天区和流转日志区应使用比例 `Star` 行随用户拖动 Palette 自适应分配高度。AutoCAD 2021 的 `PaletteSet.AddVisual` 不保证仅靠 WPF `Stretch` 填满宿主，必须把 `PaletteSet.SizeChanged` 中的实际尺寸同步到 WPF 宿主和安全面板。
 - 聊天消息必须支持自动换行、随面板宽度自适应，并允许用户选中一段文字复制。
-- AutoCAD Palette 中的聊天区和日志区不得使用 `ListBox.ItemTemplate` 为每一行嵌套可聚焦 `TextBox`。这类结构容易放大宿主焦点和消息循环问题；MVP 采用单个只读多行文本面板承载可复制内容，后续若改为富文本列表，也必须保证列表项不可递归抢焦点。
+- AutoCAD 宿主中的聊天区和日志区不得使用 `ListBox.ItemTemplate` 为每一行嵌套可聚焦 `TextBox`。这类结构容易放大宿主焦点和消息循环问题；MVP 采用单个只读多行文本面板承载可复制内容，后续若改为富文本列表，也必须保证列表项不可递归抢焦点。
 
 示例输入：
 
@@ -172,6 +189,8 @@ API Key 由后端使用 Windows DPAPI 加密。WPF 不保存密钥文件，不�
 当用户表达为“道路模型”或“创建道路模型”时，入口路由必须把它识别为独立工程对象，不得进入 `subgrade_template` Skill。当前 MVP 尚未接入道路模型 Skill 时，后端返回终止性 `UnsupportedWorkflow`，聊天流提示“道路模型不是路基模板，当前 Agent MVP 还没有接入道路模型 Skill”，确认按钮保持禁用，当前 Run 不保持 `AwaitingUserInput`，后续用户输入应作为新任务重新路由。
 
 当当前 Run 处于 `AwaitingUserInput` 时，WPF 可以继续调用后端补充输入接口，但后端不得无条件把所有输入当作旧任务补充。后端必须先判断补充内容本身是否是明确闲聊、咨询、运行时事实问题、未接入对象或新的完整工程指令；若是，则记录 `ContinuationRerouted`，按该输入重新入口路由，并让聊天流跳出旧追问。例如“请先明确要操作的路基模板目标”之后，用户输入“你好”应进入 `ChatOnly`，不再重复追问模板目标。
+
+若旧任务已经通过输入名称、当前选择集或“点选”补齐了路基模板目标，后端续跑应保存 pending 目标上下文。之后用户只补“把右侧硬路肩改为 20 米宽”这类参数句时，WPF 仍调用同一个等待中的 Run，后端应把该参数应用到已保存目标，而不是重新追问模板目标或把部件名当成模板名称。
 
 ## 参数确认面板
 
@@ -266,7 +285,7 @@ DryRun 不修改 DWG。DryRun 失败时，审批和执行按钮必须禁用。
 
 流转日志必须消费后端 `AgentRun.events`，而不是只在前端拼接粗粒度状态。每个关键阶段都要显示阶段输出，例如入口路由原因、意图识别结果、规则结果、Tool 计划、参数摘要、用户确认、Tool 调度参数、本地校验结果和最终结果。界面应按事件增量去重，避免确认或回传结果时重复打印同一批旧事件。
 
-面板中的可见日志必须是人能直接看懂的中文摘要，不直接暴露内部枚举作为主文案。例如：
+面板中的可见日志必须让人能直接判断发生了什么。Agent MVP 初期为了方便联调，允许同一条可见日志显示技术串，但不能只显示 `Status=...`、`Intent=...` 这类机器串。技术串里的每个字段必须采用 `Key=Value（中文解释）`，把解释紧贴在字段旁边；每个新的可见句子或详情行以 `---` 开头，并用缩进区分阶段首行和诊断详情行。例如：
 
 | 原始阶段 | 可见文案示例 |
 | --- | --- |
@@ -274,10 +293,12 @@ DryRun 不修改 DWG。DryRun 失败时，审批和执行按钮必须禁用。
 | `RunUpdated: Task task_xxx Succeeded` | `任务状态已更新：任务已成功完成。TaskId=task_xxx` |
 | `RuntimeFactsAnswered` | `已由运行时事实层回答：未调用大模型或 CAD 工具。` |
 | `ConversationModelRequested` | `已调用大模型生成对话回复：未进入工程执行工作流。` |
-| `PlanOutput` | `计划输出：Agent=...; Skill=...; Intent=...; Tool=...` |
-| `ToolArgumentsPrepared` | `工具参数：RoadGrade=Expressway; Components=8; ...` |
+| `IntentRecognized` | `--- 意图已识别：` + `--- 技术串 Status=FollowUpRequired（需要补充信息）; Intent=subgrade_template.create（创建路基模板意图）` + `--- 识别依据 matchedExpression=创建路基模板（命中的用户原文片段）` |
+| `RulesApplied` | `--- 规则已应用：` + `--- 技术串 Status=FollowUpRequired（需要补充信息）; FollowUp=请问道路等级是什么？（追问用户的问题）; BlockReason=-（没有阻断原因，不是错误）` + `--- 下一步 FollowUp=...（请直接回复道路等级...）` |
+| `PlanOutput` | `--- 计划输出：` + `--- 计划字段 Agent=...（RoadProto工程Agent）; Skill=...（路基模板能力域）; Intent=...（创建路基模板意图）; Tool=...（本地创建路基模板工具）` |
+| `ToolArgumentsPrepared` | `--- 工具参数：` + `--- 工具参数 RoadGrade=Expressway（高速公路）; Components=8（规则层下发的默认部件数量）; DisplayScale=10（模板显示比例）` |
 
-原始 `stage`、`message`、`TraceId`、`TaskId` 仍应写入 JSON Lines 文件日志，供机器检索和问题定位。WPF 提供“复制 TraceId”和“打开日志目录”按钮。
+原始 `stage`、`message`、`TraceId`、`TaskId` 仍应写入 JSON Lines 文件日志，供机器检索和问题定位。WPF 提供“复制 TraceId”和“打开日志目录”按钮。可见日志使用单体只读文本面板时，每条事件首行缩进两格，事件内的技术串、识别依据、规则解释和下一步等详情缩进四格；WPF 格式器必须兜底给未带标记的本地日志行补 `---`，便于从密集日志中扫出阶段层级。
 
 聊天区和流转日志区都要关闭横向滚动，按面板宽度自动换行，并允许选择局部文字复制，方便用户把一段 Trace 或错误信息发给开发者。
 
@@ -320,8 +341,9 @@ Trace 只展示可读摘要。敏感信息和 API Key 必须隐藏。
 
 ## MVP 验收
 
-- 能从 Ribbon 打开可停靠 Agent Console。
-- Agent Console 初始默认右侧停靠，并使用较宽初始尺寸。
+- 能从 Ribbon 打开 Agent Console，AutoCAD 2021 中不得导致宿主崩溃。
+- Agent Console 使用较宽初始尺寸；当前 AutoCAD 2021 稳定入口为默认右侧停靠的 `PaletteSet`。
+- Agent Console 内部白色内容区必须填满停靠 Palette，拖动 Palette 宽高时聊天区、输入区和流转日志区保持自适应比例。
 - 面板能自动检查并拉起后端服务。
 - 后端连接失败时能展示错误、重试和手动选择后端 exe。
 - 能配置 DeepSeek、阿里千问、GLM、GPT。

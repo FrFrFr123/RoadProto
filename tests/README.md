@@ -29,6 +29,10 @@ artifacts\x64\Debug\RoadProtoCoreTests.exe
 - 出图出表规则：`DRAWING_QUANTITY` 模块命令元数据、Ribbon 入口、横断面图实体当前面域优先采样、构造物范围切段、部件/结构层双模式聚合、结构层平面投影面积、平均断面法体积、依照路面面积方法体积和 SpreadsheetML `.xls` 动态列写出；路面结构图例覆盖模板列规划、表头列宽、结构图示不写层类型文字、厚度厘米表达、底部图例不合并、道路模型/横断面图选择入口和普通 CAD 图元源码契约。
 - 文档和版本 source-contract：检查 `build/RoadProto.Build.props`、README、版本记录、业务文档和复用文档的 v0.1.31 横断面图配置发布信息，同时覆盖 v0.1.35 Agent MVP 和 ARX 动态命名约束，要求每次编译生成带 `yyyyMMdd_HHmmssfff` 时间戳的新 ARX 文件名且不覆盖既有产物，并保留 v0.1.27 构造物范围和 v0.1.26 查看横断面外框与桩号白色记录。
 
+当前 Agent Console 托管契约测试覆盖 Ribbon 入口必须排队发送 `RD_AGENT_CONSOLE`、不得从 Ribbon 点击事件直接创建 WPF 窗口或 Palette、托管命令必须使用 AutoCAD `PaletteSet`，通过 `AddVisual` 注册最小 WPF 宿主，设置 `DockEnabled`、`DockSides.Right`、`Snappable` 和 `SingleColDock`，再通过 Dispatcher 延迟挂载代码构建的 `AgentConsoleSafePanel`；测试同时禁止回退到不可停靠 `ShowModelessWindow`、`ElementHost` 或直接挂载 `AgentConsolePalette` 的崩溃路径，并要求正式安全面板挂载前清除启动宿主残留布局、面板 Stretch 填满 Palette、聊天区和日志区使用比例高度以适应用户拖动。针对 AutoCAD `AddVisual` 不可靠传递 WPF 测量尺寸的问题，测试还要求托管命令监听 `PaletteSet.SizeChanged`，用 Palette 实际尺寸显式驱动宿主 `Grid` 和安全面板 `Width / Height`，避免内容只占停靠窗口左上角。
+
+当前 Agent Console 托管契约测试还覆盖可见流转日志格式：WPF `AgentLogFormatter` 必须为每条事件首行和诊断详情行提供缩进能力，并为每个可见句子兜底添加 `---` 行首标记。后端测试覆盖 `创建路基模板` 缺少道路等级时，`EntryRouted`、`IntentRecognized` 和 `RulesApplied` 事件必须同时包含命中词、候选 Skill / Intent、识别依据、规则解释和下一步，且技术字段必须采用 `Key=Value（中文解释）` 的内联格式；完整创建计划还必须解释 `Risk`、`RequiresApproval`、`RoadGrade`、`DisplayScale` 和 `Components` 等工具参数。
+
 当前 v0.1.30 新增路面工程量统计表部件名反推和表格格式自动化验证范围：核心测试覆盖普通段/桥梁段/隧道段切分、缺失构造物边界断面时的线性插值、按部件和结构层拆列、按结构层类型合并、旧道路模型缺少结构层节点部件名时从关联路基模板部件反推、面积和体积计算、`PavementQuantityCalculationMethod` 的平均断面法与依照路面面积方法、`.xls` 表头、动态列、居中、自动换行、列宽、宋体/Times New Roman 和 10 号字号，以及模块/Ribbon 元数据。AutoCAD 图形界面仍建议加载 Debug 或 Release 产物后人工验证选择横断面落图、输出路径提示、统计方式选择、断面计算方法选择和 Excel 打开效果。
 
 当前 v0.1.31 以来横断面图配置自动化验证范围：核心测试覆盖 `SectionDrawingConfigModel` 的 CSV 表头校验、UTF-8 往返、路基类型多选解析、起终点桩号归一化、同一路基部件表格行优先级、不同路基部件同桩号段同时命中、部件匹配、清表作用范围解析、清表厚度校验和单侧清表内外坡率解析；源码契约覆盖 `DnRoadModelSectionDrawingEntity` 的配置持久化、结构层面域来源字段、清表配置与厚度持久化、顶点夹点和 `manualEdited` 标记，覆盖 `SectionDrawingConfigDialogBridge`、WPF `SectionDrawingConfigWindow` 的 `路面结构层` 与 `清表` tab、Ribbon 入口、双击编辑入口和批量应用命令；路面工程量统计表覆盖 `PavementQuantityDrawingFaceSampler` 优先读取横断面图实体当前面域并排除清表面域，`ClearTableQuantityDrawingFaceSampler` 预留清表面域独立算量接口并承接厚度。AutoCAD 图形界面仍建议加载 Debug 或 Release 产物后人工验证 `RD_SECTION_DRAWING_CONFIG`、CSV 导入导出、模板点选、图上结构层绘制、清表层绘制、顶点夹点修改、双击横断面图二次编辑和修改后工程量统计。
@@ -101,9 +105,9 @@ AutoCAD 图形界面需要手工验证 `RD_PROFILE_VERTICAL_CURVE_CREATE`、`RD_
 
 ## V0.1.10 路基模板验证范围
 
-核心测试覆盖 `SubgradeTemplateDefaults` 的道路等级默认部件、默认模板删除路缘带、默认中分带外侧路缘石、按左右侧和部件类型派生的 ACI 默认色号/RGB 默认色、左右侧默认坡度、显示比例、变宽表宽度计算、坡度变化表取值、内外侧路缘石归一化、路面结构层模板引用归一化和 `SubgradeTemplateCreateService` 默认创建结果。
+核心测试覆盖 `SubgradeTemplateDefaults` 的道路等级默认部件、默认模板删除路缘带、默认中分带外侧路缘石、按左右侧和部件类型派生的 ACI 默认色号/RGB 默认色、左右侧默认坡度、显示比例、变宽表宽度计算、坡度变化表取值、内外侧路缘石归一化、路面结构层模板引用归一化、Agent 部件级增删改操作应用和 `SubgradeTemplateCreateService` 默认创建结果。
 
-核心测试覆盖 `CROSS_SECTION` 模块中 `RD_SECTION_SUBGRADE_TEMPLATE_CREATE`、`RD_SECTION_SUBGRADE_TEMPLATE_EDIT_HANDLE` 和 `RD_SECTION_SUBGRADE_TEMPLATE_APPLY_DIALOG_FILE` 的命令元数据、模块启动注册和托管 Ribbon 源码中的 `DNSUBGRADETEMPLATEENTITY` 双击编辑入口。
+核心测试覆盖 `CROSS_SECTION` 模块中 `RD_SECTION_SUBGRADE_TEMPLATE_CREATE`、`RD_SECTION_SUBGRADE_TEMPLATE_EDIT_HANDLE` 和 `RD_SECTION_SUBGRADE_TEMPLATE_APPLY_DIALOG_FILE` 的命令元数据、模块启动注册和托管 Ribbon 源码中的 `DNSUBGRADETEMPLATEENTITY` 双击编辑入口；源码契约同时覆盖 Agent 路基模板本地 CRUD 工具必须支持按名称查找、执行时点选、部件级操作应用和实体删除。
 
 AutoCAD 图形界面需要手工验证 `RD_SECTION_SUBGRADE_TEMPLATE_CREATE`、`RD_SECTION_SUBGRADE_TEMPLATE_EDIT_HANDLE`、`RD_SECTION_SUBGRADE_TEMPLATE_APPLY_DIALOG_FILE` 和 `DnSubgradeTemplateEntity`：
 

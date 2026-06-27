@@ -792,6 +792,71 @@ void subgradeTemplateVariableSlopeUsesOnlySlopeTable()
     CHECK(std::fabs(SubgradeTemplateRules::slopeAtStation(component, 110.0)) < 1.0e-9);
 }
 
+void subgradeTemplateRulesApplyAgentComponentOperations()
+{
+    using namespace roadproto::domain::cross_section;
+
+    auto data = SubgradeTemplateDefaults::create(RoadGrade::SecondClass);
+    std::wstring errorMessage;
+
+    SubgradeComponentOperation widen;
+    widen.kind = SubgradeComponentOperationKind::ModifyComponent;
+    widen.sideScope = SubgradeComponentSideScope::Both;
+    widen.componentType = SubgradeComponentType::TravelLane;
+    widen.occurrence = SubgradeComponentOccurrence::All;
+    widen.patch.widthDelta = 0.5;
+    widen.patch.color = SubgradeTemplateRgbColor{1, 2, 3};
+    widen.patch.wideningTable = std::vector<SubgradeStationValue>{{100.0, 0.25}};
+    widen.patch.variableSlopeTable = std::vector<SubgradeStationValue>{{100.0, -0.02}};
+
+    CHECK(SubgradeTemplateRules::applyComponentOperation(data, widen, errorMessage) == 2);
+    for (const auto& component : data.components) {
+        if (component.type == SubgradeComponentType::TravelLane) {
+            CHECK(std::fabs(component.width - 4.25) < 1.0e-9);
+            CHECK(component.color.r == 1);
+            CHECK(component.color.g == 2);
+            CHECK(component.color.b == 3);
+            CHECK(component.wideningTable.size() == 1);
+            CHECK(component.variableSlopeTable.size() == 1);
+        }
+    }
+
+    SubgradeComponentOperation addSidewalk;
+    addSidewalk.kind = SubgradeComponentOperationKind::AddComponent;
+    addSidewalk.sideScope = SubgradeComponentSideScope::Both;
+    addSidewalk.componentType = SubgradeComponentType::Sidewalk;
+    addSidewalk.anchorType = SubgradeComponentType::TravelLane;
+    addSidewalk.positionMode = SubgradeComponentPositionMode::OutsideOf;
+    addSidewalk.patch.width = 3.0;
+
+    CHECK(SubgradeTemplateRules::applyComponentOperation(data, addSidewalk, errorMessage) == 2);
+    const auto leftSidewalk = std::find_if(
+        data.components.begin(),
+        data.components.end(),
+        [](const auto& component) {
+            return component.side == SubgradeSide::Left && component.type == SubgradeComponentType::Sidewalk;
+        });
+    CHECK(leftSidewalk != data.components.end());
+    if (leftSidewalk != data.components.end()) {
+        CHECK(std::fabs(leftSidewalk->width - 3.0) < 1.0e-9);
+    }
+
+    SubgradeComponentOperation deleteRightEarthShoulder;
+    deleteRightEarthShoulder.kind = SubgradeComponentOperationKind::DeleteComponent;
+    deleteRightEarthShoulder.sideScope = SubgradeComponentSideScope::Right;
+    deleteRightEarthShoulder.componentType = SubgradeComponentType::EarthShoulder;
+    deleteRightEarthShoulder.occurrence = SubgradeComponentOccurrence::All;
+
+    CHECK(SubgradeTemplateRules::applyComponentOperation(data, deleteRightEarthShoulder, errorMessage) == 1);
+    CHECK(std::none_of(
+        data.components.begin(),
+        data.components.end(),
+        [](const auto& component) {
+            return component.side == SubgradeSide::Right && component.type == SubgradeComponentType::EarthShoulder;
+        }));
+    CHECK(SubgradeTemplateRules::normalize(data, errorMessage));
+}
+
 void sectionDrawingConfigRowsResolveByStationAndPriority()
 {
     using namespace roadproto::domain::cross_section;
@@ -5288,6 +5353,43 @@ void agentModuleRegistersConsoleCommandsAndRibbonPanel()
     }
 }
 
+void agentSubgradeTemplateToolCommandSourceExecutesNativeCrud()
+{
+    const auto sourcePath = findRepositoryRootForTests()
+        / "src"
+        / "cad_adapter"
+        / "objectarx"
+        / "agent"
+        / "ObjectArxAgentSubgradeTemplateToolCommand.cpp";
+    CHECK(std::filesystem::exists(sourcePath));
+
+    const auto source = readTextFileForTests(sourcePath);
+    CHECK(source.find("路基模板 Agent CRUD 原生命令入口已接收请求") == std::string::npos);
+    CHECK(source.find("resolveSubgradeTemplateTarget") != std::string::npos);
+    CHECK(source.find("findSubgradeTemplateByName") != std::string::npos);
+    CHECK(source.find("PickOnExecute") != std::string::npos);
+    CHECK(source.find("SubgradeTemplateRules::applyComponentOperation") != std::string::npos);
+    CHECK(source.find("parseComponentOperations") != std::string::npos);
+    CHECK(source.find("entity->erase()") != std::string::npos);
+}
+
+void agentSubgradeTemplateToolCommandSourceStripsRequestBomAndLineEndings()
+{
+    const auto sourcePath = findRepositoryRootForTests()
+        / "src"
+        / "cad_adapter"
+        / "objectarx"
+        / "agent"
+        / "ObjectArxAgentSubgradeTemplateToolCommand.cpp";
+    CHECK(std::filesystem::exists(sourcePath));
+
+    const auto source = readTextFileForTests(sourcePath);
+    CHECK(source.find("stripUtf8Bom") != std::string::npos);
+    CHECK(source.find("trimRequestToken") != std::string::npos);
+    CHECK(source.find("trimRequestToken(stripUtf8Bom(line.substr(0, separator)))") != std::string::npos);
+    CHECK(source.find("trimRequestToken(line.substr(separator + 1))") != std::string::npos);
+}
+
 void pavementQuantityCommandSourceContainsAggregationModeSaveDialog()
 {
     const auto sourcePath = findRepositoryRootForTests()
@@ -8999,6 +9101,7 @@ int main()
     subgradeTemplateNormalizeUnlinksEmptyPavementTemplateHandle();
     subgradeTemplateNormalizeHandlesInnerAndOuterCurbs();
     subgradeTemplateVariableSlopeUsesOnlySlopeTable();
+    subgradeTemplateRulesApplyAgentComponentOperations();
     sectionDrawingConfigRowsResolveByStationAndPriority();
     sectionDrawingConfigRowsResolvePriorityPerComponent();
     sectionDrawingConfigRowsHandleBoundaryAndNormalizationEdges();
@@ -9088,6 +9191,7 @@ int main()
     startupRegistrationIncludesCrossSectionModule();
     drawingQuantityModuleRegistersPavementQuantityCommandAndRibbonPanel();
     agentModuleRegistersConsoleCommandsAndRibbonPanel();
+    agentSubgradeTemplateToolCommandSourceExecutesNativeCrud();
     pavementQuantityCommandSourceContainsAggregationModeSaveDialog();
     pavementQuantityCommandPrefersDrawingFacesContract();
     pavementStructureLegendCommandSourceContainsSelectionAndTemplateContracts();
@@ -9106,6 +9210,7 @@ int main()
     sectionDrawingConfigWpfWindowSourceContracts();
     roadModelCommandSourceContainsCompleteObjectArxFlow();
     roadModelCommandSourceCollectsPavementTemplateSources();
+    agentSubgradeTemplateToolCommandSourceStripsRequestBomAndLineEndings();
     pavementLayerTemplateNativeSourcesContainRequiredContracts();
     fullRoadPavementTemplateDialogBridgeSourceContainsRequiredContracts();
     fullRoadPavementTemplateEntitySourceContainsRequiredContracts();

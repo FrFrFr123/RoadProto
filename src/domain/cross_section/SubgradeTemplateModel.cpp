@@ -98,6 +98,169 @@ SubgradeTemplateRgbColor aciColorToRgb(int colorIndex)
     }
 }
 
+std::vector<SubgradeSide> sidesForOperation(SubgradeComponentSideScope scope)
+{
+    switch (scope) {
+    case SubgradeComponentSideScope::Left:
+        return {SubgradeSide::Left};
+    case SubgradeComponentSideScope::Right:
+        return {SubgradeSide::Right};
+    case SubgradeComponentSideScope::Both:
+    default:
+        return {SubgradeSide::Left, SubgradeSide::Right};
+    }
+}
+
+bool sideMatches(SubgradeSide side, SubgradeComponentSideScope scope)
+{
+    return scope == SubgradeComponentSideScope::Both
+        || (scope == SubgradeComponentSideScope::Left && side == SubgradeSide::Left)
+        || (scope == SubgradeComponentSideScope::Right && side == SubgradeSide::Right);
+}
+
+bool occurrenceMatches(int occurrence, const SubgradeComponentOperation& operation)
+{
+    switch (operation.occurrence) {
+    case SubgradeComponentOccurrence::All:
+        return true;
+    case SubgradeComponentOccurrence::First:
+        return occurrence == 0;
+    case SubgradeComponentOccurrence::Second:
+        return occurrence == 1;
+    case SubgradeComponentOccurrence::Index:
+        return operation.occurrenceIndex >= 0 && occurrence == operation.occurrenceIndex;
+    default:
+        return true;
+    }
+}
+
+int& occurrenceCounterForSide(SubgradeSide side, int& leftCount, int& rightCount)
+{
+    return side == SubgradeSide::Left ? leftCount : rightCount;
+}
+
+void applyPatch(SubgradeTemplateComponent& component, const SubgradeComponentPatch& patch)
+{
+    if (patch.type.has_value()) {
+        component.type = *patch.type;
+    }
+    if (patch.width.has_value()) {
+        component.width = *patch.width;
+    }
+    if (patch.widthDelta.has_value()) {
+        component.width += *patch.widthDelta;
+    }
+    if (patch.height.has_value()) {
+        component.height = *patch.height;
+    }
+    if (patch.fixedSlope.has_value()) {
+        component.fixedSlope = *patch.fixedSlope;
+    }
+    if (patch.slopeMode.has_value()) {
+        component.slopeMode = *patch.slopeMode;
+    }
+    if (patch.color.has_value()) {
+        component.color = *patch.color;
+    }
+    if (patch.wideningTable.has_value()) {
+        component.wideningTable = *patch.wideningTable;
+    }
+    if (patch.variableSlopeTable.has_value()) {
+        component.variableSlopeTable = *patch.variableSlopeTable;
+    }
+    if (patch.hasInnerCurb.has_value()) {
+        component.hasInnerCurb = *patch.hasInnerCurb;
+    }
+    if (patch.innerCurbWidth.has_value()) {
+        component.innerCurbWidth = *patch.innerCurbWidth;
+    }
+    if (patch.innerCurbHeight.has_value()) {
+        component.innerCurbHeight = *patch.innerCurbHeight;
+    }
+    if (patch.innerCurbEmbedDepth.has_value()) {
+        component.innerCurbEmbedDepth = *patch.innerCurbEmbedDepth;
+    }
+    if (patch.hasOuterCurb.has_value()) {
+        component.hasOuterCurb = *patch.hasOuterCurb;
+    }
+    if (patch.outerCurbWidth.has_value()) {
+        component.outerCurbWidth = *patch.outerCurbWidth;
+    }
+    if (patch.outerCurbHeight.has_value()) {
+        component.outerCurbHeight = *patch.outerCurbHeight;
+    }
+    if (patch.outerCurbEmbedDepth.has_value()) {
+        component.outerCurbEmbedDepth = *patch.outerCurbEmbedDepth;
+    }
+    if (patch.pavementLayerLinked.has_value()) {
+        component.pavementLayerLinked = *patch.pavementLayerLinked;
+    }
+    if (patch.pavementLayerHandle.has_value()) {
+        component.pavementLayerHandle = *patch.pavementLayerHandle;
+    }
+    if (patch.pavementLayerName.has_value()) {
+        component.pavementLayerName = *patch.pavementLayerName;
+    }
+    if (patch.pavementLayerThickness.has_value()) {
+        component.pavementLayerThickness = *patch.pavementLayerThickness;
+    }
+}
+
+bool operationTargetsComponent(
+    const SubgradeTemplateComponent& component,
+    const SubgradeComponentOperation& operation)
+{
+    return sideMatches(component.side, operation.sideScope)
+        && operation.componentType.has_value()
+        && component.type == *operation.componentType;
+}
+
+SubgradeTemplateComponent createComponentFromOperation(
+    SubgradeSide side,
+    SubgradeComponentType type,
+    const SubgradeComponentPatch& patch)
+{
+    SubgradeTemplateComponent component;
+    component.side = side;
+    component.type = type;
+    component.width = patch.width.value_or(0.0);
+    component.fixedSlope = SubgradeTemplateDefaults::defaultSlopeFor(side, type);
+    component.color = SubgradeTemplateDefaults::defaultColorFor(side, type);
+    applyPatch(component, patch);
+    component.side = side;
+    if (!patch.type.has_value()) {
+        component.type = type;
+    }
+    return component;
+}
+
+std::vector<SubgradeTemplateComponent>::iterator insertionPointForOperation(
+    std::vector<SubgradeTemplateComponent>& components,
+    SubgradeSide side,
+    const SubgradeComponentOperation& operation)
+{
+    if (!operation.anchorType.has_value()) {
+        return components.end();
+    }
+
+    auto anchor = std::find_if(
+        components.begin(),
+        components.end(),
+        [&](const auto& component) {
+            return component.side == side && component.type == *operation.anchorType;
+        });
+    if (anchor == components.end()) {
+        return components.end();
+    }
+
+    const auto mode = operation.positionMode.value_or(SubgradeComponentPositionMode::OutsideOf);
+    if (mode == SubgradeComponentPositionMode::OutsideOf || mode == SubgradeComponentPositionMode::After) {
+        return std::next(anchor);
+    }
+
+    return anchor;
+}
+
 } // namespace
 
 SubgradeTemplateRgbColor SubgradeTemplateDefaults::defaultColorFor(SubgradeComponentType type)
@@ -333,6 +496,83 @@ double SubgradeTemplateRules::effectivePavementThickness(const SubgradeTemplateC
     }
 
     return component.pavementLayerThickness;
+}
+
+int SubgradeTemplateRules::applyComponentOperation(
+    SubgradeTemplateData& data,
+    const SubgradeComponentOperation& operation,
+    std::wstring& errorMessage)
+{
+    if (!operation.componentType.has_value()
+        && operation.kind != SubgradeComponentOperationKind::ModifyComponent) {
+        errorMessage = L"Subgrade component operation is missing component type.";
+        return 0;
+    }
+
+    if (operation.kind == SubgradeComponentOperationKind::AddComponent) {
+        const auto type = operation.patch.type.value_or(*operation.componentType);
+        if (!operation.patch.width.has_value() || !isFiniteNonNegative(*operation.patch.width) || *operation.patch.width <= 0.0) {
+            errorMessage = L"Subgrade add component operation requires a positive width.";
+            return 0;
+        }
+
+        int changed = 0;
+        for (const auto side : sidesForOperation(operation.sideScope)) {
+            auto component = createComponentFromOperation(side, type, operation.patch);
+            auto insertion = insertionPointForOperation(data.components, side, operation);
+            data.components.insert(insertion, component);
+            ++changed;
+        }
+
+        return changed;
+    }
+
+    int leftCount = 0;
+    int rightCount = 0;
+
+    if (operation.kind == SubgradeComponentOperationKind::DeleteComponent) {
+        const auto before = data.components.size();
+        std::vector<SubgradeTemplateComponent> kept;
+        kept.reserve(data.components.size());
+
+        for (const auto& component : data.components) {
+            bool remove = false;
+            if (operationTargetsComponent(component, operation)) {
+                auto& count = occurrenceCounterForSide(component.side, leftCount, rightCount);
+                remove = occurrenceMatches(count, operation);
+                ++count;
+            }
+
+            if (!remove) {
+                kept.push_back(component);
+            }
+        }
+
+        data.components = std::move(kept);
+        return static_cast<int>(before - data.components.size());
+    }
+
+    int changed = 0;
+    for (auto& component : data.components) {
+        if (!operationTargetsComponent(component, operation)) {
+            continue;
+        }
+
+        auto& count = occurrenceCounterForSide(component.side, leftCount, rightCount);
+        const auto shouldModify = occurrenceMatches(count, operation);
+        ++count;
+        if (!shouldModify) {
+            continue;
+        }
+
+        applyPatch(component, operation.patch);
+        ++changed;
+    }
+
+    if (changed == 0) {
+        errorMessage = L"Subgrade component operation did not match any component.";
+    }
+    return changed;
 }
 
 bool SubgradeTemplateRules::normalize(SubgradeTemplateData& data, std::wstring& errorMessage)

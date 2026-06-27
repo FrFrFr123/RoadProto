@@ -4,7 +4,7 @@
 
 Agent 模块用于承载 RoadProto 内的可控工程 Agent 本地能力。它是独立模块，不属于横断面、平面、纵断面或出图出表模块。
 
-Agent 模块是薄模块，只负责 WPF 可停靠 Agent Console、后端健康检查和自动启动、HTTP 通信、本地上下文摘要、本地工具适配、DryRun / 执行桥接和本地 Trace 镜像。Agent 编排、任务状态机、模型网关、API Key 加密配置、规则、Tool Registry、Trace 汇总和评测治理放在独立后端仓库：
+Agent 模块是薄模块，只负责 WPF Agent Console、后端健康检查和自动启动、HTTP 通信、本地上下文摘要、本地工具适配、DryRun / 执行桥接和本地 Trace 镜像。Agent 编排、任务状态机、模型网关、API Key 加密配置、规则、Tool Registry、Trace 汇总和评测治理放在独立后端仓库：
 
 ```text
 F:\0_GPT_RoadProtoAgentBackend
@@ -31,7 +31,7 @@ RD_AGENT_
 | `RD_AGENT_LOGS` | Agent 日志目录 | 诊断入口 | `docs/business/agent/Agent控制台_MVP.md` |
 | `RD_AGENT_SUBGRADE_TEMPLATE_TOOL_FILE` | Agent 路基模板工具 | 本地 Tool Adapter | `docs/business/agent/路基模板Skill_增删改查_MVP.md` |
 
-命令必须通过 `CommandRegistry` 注册，Ribbon 可见按钮必须同步更新 C++ Ribbon 模型和托管 WPF Ribbon。当前 `RD_AGENT_CONSOLE` 会转发到托管命令 `RD_AGENT_CONSOLE_UI`，由 AutoCAD PaletteSet 承载 WPF `AgentConsolePalette`。
+命令必须通过 `CommandRegistry` 注册，Ribbon 可见按钮必须同步更新 C++ Ribbon 模型和托管 WPF Ribbon。当前托管 Ribbon 的 `Agent 控制台` 按钮只排队发送 `RD_AGENT_CONSOLE`，不得直接创建 WPF 窗口或 Palette；`RD_AGENT_CONSOLE` 会确认 `RoadProto.Terrain.UI.dll` 已加载并转发到托管命令 `RD_AGENT_CONSOLE_UI`。托管命令在 AutoCAD 2021 中使用 `PaletteSet` 创建可停靠面板，默认停靠在右侧，并在 `Visible / Dock / Activate` 后延迟挂载 `AgentConsoleSafePanel`；面板尺寸必须由 `PaletteSet.SizeChanged` 同步到 WPF 宿主和安全面板，不能只依赖 WPF `Stretch`。
 
 ## Ribbon 位置
 
@@ -41,7 +41,7 @@ RD_AGENT_
 RoadProto / 工程 Agent / Agent 控制台
 ```
 
-MVP 不新增独立 Web 页面，不使用 WebView。所有交互在 AutoCAD 内 WPF 可停靠 Palette / 面板中完成。
+MVP 不新增独立 Web 页面，不使用 WebView。所有交互在 AutoCAD 内 WPF Agent Console 中完成；AutoCAD 2021 当前稳定入口为默认右侧停靠的 `PaletteSet`。
 
 ## 代码落点
 
@@ -53,6 +53,7 @@ RoadProto 本体仓库源码位置：
 - `src/ui/wpf/RoadProto.Terrain.UI/Agent/Bridge/AgentLocalToolBridge.cs`
 - `src/ui/wpf/RoadProto.Terrain.UI/Agent/Backend/AgentBackendClient.cs`
 - `src/ui/wpf/RoadProto.Terrain.UI/Agent/AgentConsolePalette.xaml`
+- `src/ui/wpf/RoadProto.Terrain.UI/Agent/AgentConsoleSafePanel.cs`
 - `src/ui/wpf/RoadProto.Terrain.UI/Agent/AgentConsoleCommands.cs`
 
 独立后端仓库位置：
@@ -136,6 +137,14 @@ F:\0_GPT_RoadProtoAgentRuntime\logs\backend\
 
 默认保留最近 14 天，或总量最多 1GB。WPF 面板必须提供流转日志视图、打开日志目录和复制 `TraceId`。
 
+Agent Console 启动探针固定写入：
+
+```text
+F:\0_GPT_RoadProtoAgentRuntime\logs\roadproto\agent_palette_startup_probe.log
+```
+
+该探针用于定位 Ribbon 排队、`PaletteSet` 创建、最小 WPF 宿主注册、`Visible / Dock / Activate`、安全面板挂载、Loaded 和 ViewModel 初始化阶段的宿主崩溃问题。
+
 ## MVP 验证范围
 
 首个验证场景已收敛为路基模板 Skill：
@@ -149,6 +158,6 @@ F:\0_GPT_RoadProtoAgentRuntime\logs\backend\
 - WPF 展示结构化执行计划。
 - 用户审批。
 - 复用 `RD_SECTION_SUBGRADE_TEMPLATE_APPLY_DIALOG_FILE` 创建 `DnSubgradeTemplateEntity`。
-- 修改、删除、查询通过 `RD_AGENT_SUBGRADE_TEMPLATE_TOOL_FILE` 进入本地受控 Tool Adapter。
+- 修改、删除、查询通过 `RD_AGENT_SUBGRADE_TEMPLATE_TOOL_FILE` 进入本地受控 Tool Adapter；该命令已支持按 handle、名称和执行时点选定位路基模板，查询模板摘要，修改实体参数和部件级增删改，删除目标 `DnSubgradeTemplateEntity`。
 - WPF 通过结果文件读取本地工具结果，并回传后端 `/api/agent/runs/{taskId}/tool-result`。
 - 记录 Trace 和全流程日志。

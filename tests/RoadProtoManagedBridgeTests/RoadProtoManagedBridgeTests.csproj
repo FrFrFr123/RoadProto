@@ -7,6 +7,7 @@
     <LangVersion>latest</LangVersion>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="..\..\src\ui\wpf\RoadProto.Terrain.UI\Agent\Models\AgentDtos.cs" Link="Agent\Models\AgentDtos.cs" />
     <Compile Include="..\..\src\ui\wpf\RoadProto.Terrain.UI\Agent\AgentLogFormatter.cs" Link="Agent\AgentLogFormatter.cs" />
     <Compile Include="..\..\src\ui\wpf\RoadProto.Terrain.UI\Bridge\AlignmentDialogDtos.cs" Link="Bridge\AlignmentDialogDtos.cs" />
     <Compile Include="..\..\src\ui\wpf\RoadProto.Terrain.UI\Bridge\AlignmentDialogFile.cs" Link="Bridge\AlignmentDialogFile.cs" />

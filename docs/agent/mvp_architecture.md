@@ -26,17 +26,17 @@ F:\0_GPT_RoadProtoAgentBackend
 .NET 8 / ASP.NET Core
 ```
 
-RoadProto 仓库只承载本地 `AGENT` 薄模块、WPF 可停靠面板、HTTP 客户端、CAD Bridge / Adapter 和接口契约文档。Agent 编排、任务状态机、工具注册、模型调用、API Key 加密配置、日志与评测均放在独立后端仓库。
+RoadProto 仓库只承载本地 `AGENT` 薄模块、WPF Agent Console、HTTP 客户端、CAD Bridge / Adapter 和接口契约文档。Agent 编排、任务状态机、工具注册、模型调用、API Key 加密配置、日志与评测均放在独立后端仓库。
 
 ## 总体形态
 
-MVP 采用“独立后端服务 + RoadProto 本地 AGENT 薄模块 + WPF 可停靠 Agent Console”的形态。
+MVP 采用“独立后端服务 + RoadProto 本地 AGENT 薄模块 + WPF Agent Console”的形态。
 
 ```text
 用户
   |
   v
-AutoCAD 内 WPF 可停靠 Agent Console
+AutoCAD 内 WPF Agent Console
   |
   v
 RoadProto AGENT 薄模块
@@ -64,9 +64,9 @@ ObjectARX / application / domain / cad_adapter
 
 ## 分层职责
 
-### WPF 可停靠 Agent Console
+### WPF Agent Console
 
-WPF 是唯一用户交互界面。它以 AutoCAD Palette / 可停靠面板形式常驻，不建设独立 Web 前端，不嵌入 WebView。
+WPF 是唯一用户交互界面。它在 AutoCAD 内打开，不建设独立 Web 前端，不嵌入 WebView。AutoCAD 2021 当前稳定实现为右侧停靠的 `PaletteSet`：先注册最小 WPF 宿主，再延迟挂载代码构建的 `AgentConsoleSafePanel`。
 
 WPF 负责：
 
@@ -95,7 +95,7 @@ RoadProto 内新增独立 `AGENT` 模块。该模块不是横断面模块的一�
 本地 `AGENT` 模块负责：
 
 - 注册 `RD_AGENT_` 前缀命令和 Ribbon 入口。
-- 打开 WPF 可停靠 Agent Console。
+- 打开 WPF Agent Console。
 - 检查后端健康状态，必要时自动拉起本地后端进程。
 - 维护后端 HTTP 客户端和超时、重试、错误转换。
 - 读取当前 DWG、当前文档、选中对象和可用 RoadProto 工具摘要。
@@ -217,6 +217,8 @@ WorkflowCommand -> AgentRouted，继续 Skill / Intent 识别
 
 受控对话通道必须先经过运行时事实层。当前日期、当前本地时间、当前模型 Provider、当前模型名和 Agent 身份属于后端确定事实，不允许交给模型猜。若用户询问“今天几号”“你是什么模型”“当前模型版本”等运行状态问题，后端应直接依据运行时事实回答，并记录 `RuntimeFactsAnswered`；普通闲聊或咨询再把同一组事实注入 prompt 后调用模型。
 
+受控对话调用模型失败时，后端必须返回结构化 `Failed` 的 `AgentRun`，并在 `toolResult.message` 和 `RunFailed` 事件中写明“模型调用失败”的可读原因；不得让异常直接穿透为 `/api/agent/runs` 的 HTTP 500。这样 WPF 能显示具体问题，`TraceId` / `TaskId` / 事件流也能保留。
+
 执行失败且本地 Adapter 支持恢复时进入：
 
 ```text
@@ -229,7 +231,7 @@ RollbackFailed
 
 ## 数据流
 
-1. 用户打开 WPF 可停靠 Agent Console。
+1. 用户打开 WPF Agent Console。
 2. RoadProto 本地 `AGENT` 模块检查 `/health`，必要时自动拉起独立后端。
 3. 用户选择或配置模型 Provider、API Base URL、API Key 和默认模型。
 4. WPF 把模型配置提交给后端，后端使用 DPAPI 加密保存。
@@ -264,7 +266,7 @@ Agent 模块必须遵守 RoadProto 当前分层：
 | `application` | 本地 Agent 客户端流程、HTTP 客户端、工具适配、DryRun 和执行控制 |
 | `domain` | Agent Schema、字段来源、风险、Trace 等不依赖 ObjectARX 的结构 |
 | `cad_adapter/objectarx` | 当前 DWG 上下文读取、对象选择、预览和写入 |
-| `ui/wpf` | 可停靠 Agent Console、审批面板、Trace 查看和模型设置 |
+| `ui/wpf` | Agent Console、审批面板、Trace 查看和模型设置 |
 | 独立后端仓库 | 模型网关、主 Orchestrator、配置中心、Credential、评测和治理 |
 
 ## MVP 必做
@@ -272,7 +274,7 @@ Agent 模块必须遵守 RoadProto 当前分层：
 - 新增独立 Agent 文档区和模块说明。
 - 明确独立后端仓库 `F:\0_GPT_RoadProtoAgentBackend`。
 - 定义 `.NET 8 / ASP.NET Core` 后端服务契约。
-- 定义 `AGENT` 薄模块、`RD_AGENT_` 命令前缀和 WPF Ribbon / Palette 入口。
+- 定义 `AGENT` 薄模块、`RD_AGENT_` 命令前缀和 WPF Ribbon / Agent Console 入口。
 - 定义后端自动启动、健康检查和失败提示流程。
 - 定义多模型 Provider 配置、DPAPI 加密和连接测试流程。
 - 定义 RoadProto 本地 Agent Adapter 契约。
@@ -298,7 +300,7 @@ Agent 模块必须遵守 RoadProto 当前分层：
 
 ## 验收标准
 
-- 用户能在 AutoCAD 内可停靠 WPF 面板中发起自然语言任务。
+- 用户能在 AutoCAD 内 WPF Agent Console 中发起自然语言任务。
 - 面板打开时能自动检查并拉起后端服务。
 - `/health` 正常时能显示后端版本和状态。
 - 用户能配置 DeepSeek、阿里千问、GLM、GPT 的 API 信息并测试连接。

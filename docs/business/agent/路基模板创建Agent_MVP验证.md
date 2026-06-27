@@ -67,9 +67,20 @@ RoadProto 已有路基模板创建能力，具备领域默认值、参数规则�
 ## 关键业务规则
 
 - LLM 只提取用户明确表达的参数。
-- 道路等级缺失时由规则默认 `Expressway`。
+- 道路等级缺失时先追问用户，不直接默认 `Expressway`；原生 RoadProto 空白新建窗口仍可默认高速公路，但 Agent 写入链路必须让道路等级成为可追溯参数。
 - 模板名称缺失时由规则默认 `默认路基模板`。
 - 显示比例缺失时由规则默认 `10`。
+- 当用户补充或直接表达任意受支持道路等级时，后端规则必须把中文等级归一化为 RoadProto 稳定编码，并从 `defaultComponentsByRoadGrade` 下发非空 `Components`：
+  - 高速公路：`Expressway`
+  - 一级公路：`FirstClass`
+  - 二级公路：`SecondClass`
+  - 三级公路：`ThirdClass`
+  - 四级公路：`FourthClass`
+  - 城市快速路：`UrbanExpressway`
+  - 城市主干路 / 城市主干道：`UrbanArterial`
+  - 城市次干路 / 城市次干道：`UrbanSubArterial`
+  - 城市支路：`UrbanBranch`
+- `Components=0` 是规则缺失或道路等级未覆盖的失败信号，不得交给 RoadProto 本地 Adapter 自行补默认部件。
 - 显示比例只能为 1、10、20、50、100。
 - 用户输入总宽时，MVP 只记录和展示，不自动拆分到各部件宽度。
 - 正式创建前必须 DryRun。

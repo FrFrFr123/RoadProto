@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <optional>
 #include <vector>
 
 namespace roadproto::domain::cross_section {
@@ -85,6 +86,67 @@ struct SubgradeTemplateData {
     std::wstring roadCenterlineHandle;
 };
 
+enum class SubgradeComponentOperationKind {
+    ModifyComponent,
+    AddComponent,
+    DeleteComponent
+};
+
+enum class SubgradeComponentSideScope {
+    Left,
+    Right,
+    Both
+};
+
+enum class SubgradeComponentOccurrence {
+    All,
+    First,
+    Second,
+    Index
+};
+
+enum class SubgradeComponentPositionMode {
+    OutsideOf,
+    InsideOf,
+    Before,
+    After
+};
+
+struct SubgradeComponentPatch {
+    std::optional<SubgradeComponentType> type;
+    std::optional<double> width;
+    std::optional<double> widthDelta;
+    std::optional<double> height;
+    std::optional<double> fixedSlope;
+    std::optional<SubgradeSlopeMode> slopeMode;
+    std::optional<SubgradeTemplateRgbColor> color;
+    std::optional<std::vector<SubgradeStationValue>> wideningTable;
+    std::optional<std::vector<SubgradeStationValue>> variableSlopeTable;
+    std::optional<bool> hasInnerCurb;
+    std::optional<double> innerCurbWidth;
+    std::optional<double> innerCurbHeight;
+    std::optional<double> innerCurbEmbedDepth;
+    std::optional<bool> hasOuterCurb;
+    std::optional<double> outerCurbWidth;
+    std::optional<double> outerCurbHeight;
+    std::optional<double> outerCurbEmbedDepth;
+    std::optional<bool> pavementLayerLinked;
+    std::optional<std::wstring> pavementLayerHandle;
+    std::optional<std::wstring> pavementLayerName;
+    std::optional<double> pavementLayerThickness;
+};
+
+struct SubgradeComponentOperation {
+    SubgradeComponentOperationKind kind = SubgradeComponentOperationKind::ModifyComponent;
+    SubgradeComponentSideScope sideScope = SubgradeComponentSideScope::Both;
+    std::optional<SubgradeComponentType> componentType;
+    SubgradeComponentOccurrence occurrence = SubgradeComponentOccurrence::All;
+    int occurrenceIndex = -1;
+    std::optional<SubgradeComponentPositionMode> positionMode;
+    std::optional<SubgradeComponentType> anchorType;
+    SubgradeComponentPatch patch;
+};
+
 class SubgradeTemplateDefaults {
 public:
     static SubgradeTemplateData create(RoadGrade grade);
@@ -106,6 +168,10 @@ public:
     static double innerCurbHeightDelta(const SubgradeTemplateComponent& component);
     static double outerCurbHeightDelta(const SubgradeTemplateComponent& component);
     static double effectivePavementThickness(const SubgradeTemplateComponent& component);
+    static int applyComponentOperation(
+        SubgradeTemplateData& data,
+        const SubgradeComponentOperation& operation,
+        std::wstring& errorMessage);
     static bool normalize(SubgradeTemplateData& data, std::wstring& errorMessage);
 };
 

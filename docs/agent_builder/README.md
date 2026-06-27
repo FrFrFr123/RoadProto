@@ -19,6 +19,7 @@
 | `twelve_layer_modules.md` | 12 层模块职责、输入输出、MVP 交付物 |
 | `entry_routing.md` | 用户一句话如何自主判断为闲聊、咨询、工作流候选或工作流补充 |
 | `skill_intent_tool_authoring.md` | Skill、Intent、Schema、Rule、Tool 的编写和绑定方法 |
+| `generalized_rules.md` | 联调中抽象出的跨 Skill 泛化规则，例如基于蓝本的实体派生创建 |
 | `maintenance_policy.md` | 后续每次 Agent 相关修改时，本目录如何同步更新 |
 | `roadproto_practice_log.md` | RoadProto 当前实践带来的经验、修正和可复用结论 |
 | `templates/` | 新项目可复制的 Skill、Intent、Tool、Trace 模板 |
@@ -63,7 +64,8 @@ RoadProto MVP 已经验证出几条应写入通用手册的结论：
 - 相邻工程对象必须在入口路由和 Intent 负向样例中显式排除；`道路模型` 不能被误识别为 `路基模板`。
 - 默认值应由机器可读规则文件控制，宿主软件 Adapter 只负责执行和校验。
 - 复杂工程默认值应以完整结构下发，例如组件列表、材料层或配置行，不要压扁成几个标量再让 Adapter 推导。
-- 前端可见流转日志要映射成人能理解的中文文案，原始 stage / message 保留给文件 Trace。
+- 创建类请求如果同时表达“基于原本 / 默认 / 现有蓝本”和局部参数变化，应识别为 `CreateFromBase + ParameterPatch`，仍调用创建类 Tool；局部“增加 / 删除 / 修改”只表示新对象参数补丁，不应误派到修改原对象。
+- 前端可见流转日志要映射成人能理解的中文文案。MVP 联调期可以在界面同时显示技术串和文字解释，但必须让 `Status`、`Intent`、`FollowUp`、`BlockReason` 等机器字段旁边有识别依据、规则解释和下一步。
 - 前端可见流转日志应由后端结构化事件驱动，并显示每个阶段的关键输出；不要只在前端拼接“任务成功/失败”的粗状态。
 - 宿主软件内 Agent Console 要记住上次模型 Provider 配置，打开时从后端配置中心恢复，不应每次回到硬编码默认模型。
 - 写入类确认动作应嵌入对话流或任务卡片内，靠近本次执行计划；不要把确认按钮长期固定在输入框旁边。

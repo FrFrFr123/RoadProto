@@ -30,6 +30,12 @@ public sealed class StartAgentRunRequestDto
 
     [DataMember(Name = "message")]
     public string Message { get; set; } = string.Empty;
+
+    [DataMember(Name = "currentTemplateHandle", EmitDefaultValue = false)]
+    public string? CurrentTemplateHandle { get; set; }
+
+    [DataMember(Name = "currentTemplateName", EmitDefaultValue = false)]
+    public string? CurrentTemplateName { get; set; }
 }
 
 [DataContract]
@@ -37,6 +43,12 @@ public sealed class AgentRunUserInputRequestDto
 {
     [DataMember(Name = "message")]
     public string Message { get; set; } = string.Empty;
+
+    [DataMember(Name = "currentTemplateHandle", EmitDefaultValue = false)]
+    public string? CurrentTemplateHandle { get; set; }
+
+    [DataMember(Name = "currentTemplateName", EmitDefaultValue = false)]
+    public string? CurrentTemplateName { get; set; }
 }
 
 [DataContract]
@@ -233,6 +245,15 @@ public sealed class SubgradeTemplateCreateArgumentsDto
     [DataMember(Name = "TargetName")]
     public string? TargetName { get; set; }
 
+    [DataMember(Name = "TargetMode")]
+    public string? TargetMode { get; set; }
+
+    [DataMember(Name = "TargetRef")]
+    public string? TargetRef { get; set; }
+
+    [DataMember(Name = "SideScope")]
+    public string? SideScope { get; set; }
+
     [DataMember(Name = "LaneWidth")]
     public double? LaneWidth { get; set; }
 
@@ -259,6 +280,107 @@ public sealed class SubgradeTemplateCreateArgumentsDto
 
     [DataMember(Name = "Components")]
     public List<SubgradeTemplateComponentArgumentDto> Components { get; set; } = new();
+
+    [DataMember(Name = "ComponentOperations")]
+    public List<SubgradeTemplateComponentOperationArgumentDto> ComponentOperations { get; set; } = new();
+}
+
+[DataContract]
+public sealed class SubgradeTemplateComponentOperationArgumentDto
+{
+    [DataMember(Name = "Operation")]
+    public string Operation { get; set; } = string.Empty;
+
+    [DataMember(Name = "SideScope")]
+    public string? SideScope { get; set; }
+
+    [DataMember(Name = "ComponentType")]
+    public string? ComponentType { get; set; }
+
+    [DataMember(Name = "Occurrence")]
+    public string? Occurrence { get; set; }
+
+    [DataMember(Name = "PositionMode")]
+    public string? PositionMode { get; set; }
+
+    [DataMember(Name = "AnchorType")]
+    public string? AnchorType { get; set; }
+
+    [DataMember(Name = "Patch")]
+    public SubgradeTemplateComponentPatchArgumentDto Patch { get; set; } = new();
+}
+
+[DataContract]
+public sealed class SubgradeTemplateComponentPatchArgumentDto
+{
+    [DataMember(Name = "Type")]
+    public string? Type { get; set; }
+
+    [DataMember(Name = "Width")]
+    public double? Width { get; set; }
+
+    [DataMember(Name = "WidthDelta")]
+    public double? WidthDelta { get; set; }
+
+    [DataMember(Name = "Height")]
+    public double? Height { get; set; }
+
+    [DataMember(Name = "FixedSlope")]
+    public double? FixedSlope { get; set; }
+
+    [DataMember(Name = "SlopeMode")]
+    public string? SlopeMode { get; set; }
+
+    [DataMember(Name = "WideningTable")]
+    public List<SubgradeTemplateStationValueArgumentDto> WideningTable { get; set; } = new();
+
+    [DataMember(Name = "VariableSlopeTable")]
+    public List<SubgradeTemplateStationValueArgumentDto> VariableSlopeTable { get; set; } = new();
+
+    [DataMember(Name = "ColorR")]
+    public int? ColorR { get; set; }
+
+    [DataMember(Name = "ColorG")]
+    public int? ColorG { get; set; }
+
+    [DataMember(Name = "ColorB")]
+    public int? ColorB { get; set; }
+
+    [DataMember(Name = "HasInnerCurb")]
+    public bool? HasInnerCurb { get; set; }
+
+    [DataMember(Name = "InnerCurbWidth")]
+    public double? InnerCurbWidth { get; set; }
+
+    [DataMember(Name = "InnerCurbHeight")]
+    public double? InnerCurbHeight { get; set; }
+
+    [DataMember(Name = "InnerCurbEmbedDepth")]
+    public double? InnerCurbEmbedDepth { get; set; }
+
+    [DataMember(Name = "HasOuterCurb")]
+    public bool? HasOuterCurb { get; set; }
+
+    [DataMember(Name = "OuterCurbWidth")]
+    public double? OuterCurbWidth { get; set; }
+
+    [DataMember(Name = "OuterCurbHeight")]
+    public double? OuterCurbHeight { get; set; }
+
+    [DataMember(Name = "OuterCurbEmbedDepth")]
+    public double? OuterCurbEmbedDepth { get; set; }
+
+    [DataMember(Name = "PavementLayerLinked")]
+    public bool? PavementLayerLinked { get; set; }
+
+    [DataMember(Name = "PavementLayerHandle")]
+    public string? PavementLayerHandle { get; set; }
+
+    [DataMember(Name = "PavementLayerName")]
+    public string? PavementLayerName { get; set; }
+
+    [DataMember(Name = "PavementLayerThickness")]
+    public double? PavementLayerThickness { get; set; }
 }
 
 [DataContract]

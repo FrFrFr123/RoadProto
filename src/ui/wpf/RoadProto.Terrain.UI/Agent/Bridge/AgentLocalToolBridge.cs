@@ -39,6 +39,8 @@ public sealed class AgentLocalToolBridge
         }
 
         var arguments = ParseSubgradeArguments(run.DispatchedToolCall.ArgumentsJson);
+        arguments.Components ??= new List<SubgradeTemplateComponentArgumentDto>();
+        arguments.ComponentOperations ??= new List<SubgradeTemplateComponentOperationArgumentDto>();
         if (!string.Equals(run.DispatchedToolCall.ToolName, SubgradeCreateToolName, StringComparison.OrdinalIgnoreCase))
         {
             var requestPath = Path.Combine(Path.GetTempPath(), $"RoadProtoAgentSubgradeTool_{Guid.NewGuid():N}.request");
@@ -88,7 +90,7 @@ public sealed class AgentLocalToolBridge
             SubgradeQueryToolName => "query",
             _ => "create",
         };
-        File.WriteAllLines(requestPath, new[]
+        var lines = new List<string>
         {
             Write("operation", operation),
             Write("traceId", run.TraceId),
@@ -97,11 +99,13 @@ public sealed class AgentLocalToolBridge
             Write("skillId", run.Plan?.SkillId ?? string.Empty),
             Write("intentId", run.Plan?.IntentId ?? string.Empty),
             Write("toolName", toolName),
-            Write("targetMode", string.Empty),
+            Write("targetMode", arguments.TargetMode ?? string.Empty),
+            Write("targetRef", arguments.TargetRef ?? string.Empty),
             Write("targetHandle", arguments.TargetHandle ?? string.Empty),
             Write("targetName", arguments.TargetName ?? string.Empty),
             Write("templateName", arguments.TemplateName ?? string.Empty),
             Write("roadGrade", arguments.RoadGrade ?? string.Empty),
+            Write("sideScope", arguments.SideScope ?? string.Empty),
             Write("laneWidth", Format(arguments.LaneWidth)),
             Write("laneWidthDelta", Format(arguments.LaneWidthDelta)),
             Write("hardShoulderWidth", Format(arguments.HardShoulderWidth)),
@@ -109,8 +113,68 @@ public sealed class AgentLocalToolBridge
             Write("medianWidth", Format(arguments.MedianWidth)),
             Write("slopeRatio", Format(arguments.SlopeRatio)),
             Write("unit", arguments.Unit ?? string.Empty),
+            Write("componentOperationCount", arguments.ComponentOperations.Count.ToString(CultureInfo.InvariantCulture)),
             Write("resultPath", resultPath),
-        }, Encoding.UTF8);
+        };
+
+        for (var index = 0; index < arguments.ComponentOperations.Count; index++)
+        {
+            AppendComponentOperationLines(lines, index, arguments.ComponentOperations[index]);
+        }
+
+        File.WriteAllText(requestPath, string.Join("\n", lines), new UTF8Encoding(false));
+    }
+
+    private static void AppendComponentOperationLines(
+        List<string> lines,
+        int index,
+        SubgradeTemplateComponentOperationArgumentDto operation)
+    {
+        var prefix = $"componentOperation.{index}";
+        var patch = operation.Patch ?? new SubgradeTemplateComponentPatchArgumentDto();
+        lines.Add(Write($"{prefix}.operation", operation.Operation ?? string.Empty));
+        lines.Add(Write($"{prefix}.sideScope", operation.SideScope ?? string.Empty));
+        lines.Add(Write($"{prefix}.componentType", operation.ComponentType ?? string.Empty));
+        lines.Add(Write($"{prefix}.occurrence", operation.Occurrence ?? string.Empty));
+        lines.Add(Write($"{prefix}.positionMode", operation.PositionMode ?? string.Empty));
+        lines.Add(Write($"{prefix}.anchorType", operation.AnchorType ?? string.Empty));
+        lines.Add(Write($"{prefix}.patch.type", patch.Type ?? string.Empty));
+        lines.Add(Write($"{prefix}.patch.width", Format(patch.Width)));
+        lines.Add(Write($"{prefix}.patch.widthDelta", Format(patch.WidthDelta)));
+        lines.Add(Write($"{prefix}.patch.height", Format(patch.Height)));
+        lines.Add(Write($"{prefix}.patch.fixedSlope", Format(patch.FixedSlope)));
+        lines.Add(Write($"{prefix}.patch.slopeMode", patch.SlopeMode ?? string.Empty));
+        AppendStationRows(lines, $"{prefix}.patch.widening", patch.WideningTable);
+        AppendStationRows(lines, $"{prefix}.patch.slopeTable", patch.VariableSlopeTable);
+        lines.Add(Write($"{prefix}.patch.colorR", Format(patch.ColorR)));
+        lines.Add(Write($"{prefix}.patch.colorG", Format(patch.ColorG)));
+        lines.Add(Write($"{prefix}.patch.colorB", Format(patch.ColorB)));
+        lines.Add(Write($"{prefix}.patch.hasInnerCurb", Format(patch.HasInnerCurb)));
+        lines.Add(Write($"{prefix}.patch.innerCurbWidth", Format(patch.InnerCurbWidth)));
+        lines.Add(Write($"{prefix}.patch.innerCurbHeight", Format(patch.InnerCurbHeight)));
+        lines.Add(Write($"{prefix}.patch.innerCurbEmbedDepth", Format(patch.InnerCurbEmbedDepth)));
+        lines.Add(Write($"{prefix}.patch.hasOuterCurb", Format(patch.HasOuterCurb)));
+        lines.Add(Write($"{prefix}.patch.outerCurbWidth", Format(patch.OuterCurbWidth)));
+        lines.Add(Write($"{prefix}.patch.outerCurbHeight", Format(patch.OuterCurbHeight)));
+        lines.Add(Write($"{prefix}.patch.outerCurbEmbedDepth", Format(patch.OuterCurbEmbedDepth)));
+        lines.Add(Write($"{prefix}.patch.pavementLayerLinked", Format(patch.PavementLayerLinked)));
+        lines.Add(Write($"{prefix}.patch.pavementLayerHandle", patch.PavementLayerHandle ?? string.Empty));
+        lines.Add(Write($"{prefix}.patch.pavementLayerName", patch.PavementLayerName ?? string.Empty));
+        lines.Add(Write($"{prefix}.patch.pavementLayerThickness", Format(patch.PavementLayerThickness)));
+    }
+
+    private static void AppendStationRows(
+        List<string> lines,
+        string prefix,
+        List<SubgradeTemplateStationValueArgumentDto>? rows)
+    {
+        var safeRows = rows ?? new List<SubgradeTemplateStationValueArgumentDto>();
+        lines.Add(Write($"{prefix}Count", safeRows.Count.ToString(CultureInfo.InvariantCulture)));
+        for (var i = 0; i < safeRows.Count; i++)
+        {
+            lines.Add(Write($"{prefix}.{i}.station", Format(safeRows[i].Station)));
+            lines.Add(Write($"{prefix}.{i}.value", Format(safeRows[i].Value)));
+        }
     }
 
     private static SubgradeTemplateDialogResponse CreateSubgradeResponse(
@@ -389,6 +453,12 @@ public sealed class AgentLocalToolBridge
 
     private static string Format(double? value)
         => value.HasValue ? value.Value.ToString("0.########", CultureInfo.InvariantCulture) : string.Empty;
+
+    private static string Format(int? value)
+        => value.HasValue ? value.Value.ToString(CultureInfo.InvariantCulture) : string.Empty;
+
+    private static string Format(bool? value)
+        => value.HasValue ? (value.Value ? "1" : "0") : string.Empty;
 
     private static string Escape(string value)
     {

@@ -19,14 +19,17 @@ public sealed class AgentConsoleViewModel : INotifyPropertyChanged
     private readonly AgentBackendSupervisor _supervisor;
     private readonly AgentTraceLogger _logger;
     private readonly AgentLocalToolBridge _toolBridge = new();
+    private readonly AgentCadContextProvider _cadContextProvider = new();
     private readonly HashSet<string> _loggedEventKeys = new(StringComparer.Ordinal);
     private AgentRunDto? _currentRun;
+    private string? _sessionId;
     private string _backendStatus = "未连接";
     private string _traceId = "-";
     private string _selectedProvider = "GPT";
     private string _providerBaseUrl = "https://api.openai.com/v1";
     private string _providerModel = "gpt-4.1";
     private bool _canConfirm;
+    private bool _canPickTarget;
     private bool _providerEnabled = true;
     private bool _isApplyingProviderView;
 
@@ -109,11 +112,20 @@ public sealed class AgentConsoleViewModel : INotifyPropertyChanged
         private set => SetField(ref _canConfirm, value);
     }
 
+    public bool CanPickTarget
+    {
+        get => _canPickTarget;
+        private set => SetField(ref _canPickTarget, value);
+    }
+
     public async Task InitializeAsync()
     {
         BackendStatus = "启动中";
+        Log("BackendEnsureStarted", "开始检查并启动 Agent 后端。");
         var result = await _supervisor.EnsureBackendAsync().ConfigureAwait(true);
         BackendStatus = result;
+        Log("BackendEnsureCompleted", result);
+        Log("ProviderSettingsLoadStarted", "开始读取已保存的模型配置。");
         await LoadProviderSettingsAsync().ConfigureAwait(true);
         Log("PanelOpened", "Agent 控制台已打开。");
     }
@@ -125,10 +137,42 @@ public sealed class AgentConsoleViewModel : INotifyPropertyChanged
             return;
         }
 
-        Messages.Add("我: " + message);
+        var cadContext = _cadContextProvider.CaptureForMessage(message);
+        await SendWithCadContextAsync(message, cadContext, message).ConfigureAwait(true);
+    }
+
+    public async Task PickTargetAsync()
+    {
+        var cadContext = _cadContextProvider.PickSubgradeTemplate();
+        if (!cadContext.HasCurrentTemplate)
+        {
+            AddAgentMessage("未选择有效的路基模板。");
+            Log("CadContextPickCancelled", "用户未点选有效路基模板。");
+            return;
+        }
+
+        await SendWithCadContextAsync("选中的路基模板", cadContext, "点选路基模板").ConfigureAwait(true);
+    }
+
+    private async Task SendWithCadContextAsync(string message, AgentCadContext cadContext, string visibleUserMessage)
+    {
+        StartVisibleUserTurn(visibleUserMessage);
+        if (cadContext.HasCurrentTemplate)
+        {
+            Log("CadContextCaptured", $"当前选择集检测到路基模板 Handle={cadContext.CurrentTemplateHandle ?? "-"}。");
+        }
+
         var run = _currentRun?.State == "AwaitingUserInput"
-            ? await _client.PostUserInputAsync(_currentRun.TaskId, message).ConfigureAwait(true)
-            : await _client.StartRunAsync(null, message).ConfigureAwait(true);
+            ? await _client.PostUserInputAsync(
+                _currentRun.TaskId,
+                message,
+                cadContext.CurrentTemplateHandle,
+                cadContext.CurrentTemplateName).ConfigureAwait(true)
+            : await _client.StartRunAsync(
+                _sessionId,
+                message,
+                cadContext.CurrentTemplateHandle,
+                cadContext.CurrentTemplateName).ConfigureAwait(true);
         ApplyRun(run);
     }
 
@@ -143,15 +187,16 @@ public sealed class AgentConsoleViewModel : INotifyPropertyChanged
         _currentRun = run;
         CanConfirm = false;
         ApplyRun(run);
-        Messages.Add("Agent: 已确认，正在调用 RoadProto 本地工具。");
+        AddAgentMessage("已确认，正在调用 RoadProto 本地工具。");
 
         var toolResult = await _toolBridge.DispatchAsync(run).ConfigureAwait(true);
         Log("LocalToolValidationCompleted", toolResult.Message);
         var completed = await _client.PostToolResultAsync(run.TaskId, toolResult).ConfigureAwait(true);
         _currentRun = completed;
-        Messages.Add(toolResult.Succeeded
-            ? $"Agent: {toolResult.Message} Handle: {toolResult.EntityId ?? "-"}"
-            : $"Agent: {toolResult.Message}");
+        RememberSession(completed);
+        AddAgentMessage(toolResult.Succeeded
+            ? $"{toolResult.Message} Handle: {toolResult.EntityId ?? "-"}"
+            : toolResult.Message);
     }
 
     public async Task CancelAsync()
@@ -165,46 +210,59 @@ public sealed class AgentConsoleViewModel : INotifyPropertyChanged
         _currentRun = run;
         CanConfirm = false;
         ApplyRun(run);
-        Messages.Add("Agent: 已取消本次操作。");
+        AddAgentMessage("已取消本次操作。");
     }
 
     private void ApplyRun(AgentRunDto run)
     {
         _currentRun = run;
+        RememberSession(run);
         TraceId = run.TraceId;
         CanConfirm = run.State == "AwaitingUserConfirmation";
+        CanPickTarget = run.State == "AwaitingUserInput" && NeedsTemplateTarget(run.FollowUpMessage ?? run.Plan?.FollowUpMessage);
         LogRunEvents(run);
 
         if (run.State == "AwaitingUserInput")
         {
-            var followUpMessage = !string.IsNullOrWhiteSpace(run.FollowUpMessage)
-                ? run.FollowUpMessage
-                : run.Plan?.FollowUpMessage ?? "请补充必要信息。";
-            Messages.Add("Agent: " + followUpMessage);
+            var followUpMessage = run.FollowUpMessage;
+            if (string.IsNullOrWhiteSpace(followUpMessage))
+            {
+                followUpMessage = run.Plan?.FollowUpMessage;
+            }
+
+            AddAgentMessage(followUpMessage ?? "请补充必要信息。");
             return;
         }
 
         if (run.Plan != null && run.State == "AwaitingUserConfirmation")
         {
-            Messages.Add("Agent: " + DescribePlan(run.Plan));
+            AddAgentMessage(DescribePlan(run.Plan));
             if (!string.IsNullOrWhiteSpace(run.Plan.RiskLevel))
             {
-                Messages.Add($"Agent: 风险等级：{TranslateRiskLevel(run.Plan.RiskLevel)}；将调用：{TranslateToolName(run.Plan.ToolName)}。");
+                AddAgentMessage($"风险等级：{TranslateRiskLevel(run.Plan.RiskLevel)}；将调用：{TranslateToolName(run.Plan.ToolName)}。");
             }
         }
         else if (run.EntryRoute != null && run.ToolResult != null)
         {
-            Messages.Add("Agent: " + run.ToolResult.Message);
+            AddAgentMessage(run.ToolResult.Message);
             return;
         }
         else
         {
-            Messages.Add("Agent: " + run.State);
+            AddAgentMessage(run.State);
         }
 
         if (run.State == "Succeeded" && run.ToolResult != null)
         {
-            Messages.Add("Agent: " + run.ToolResult.Message);
+            AddAgentMessage(run.ToolResult.Message);
+        }
+    }
+
+    private void RememberSession(AgentRunDto run)
+    {
+        if (!string.IsNullOrWhiteSpace(run.SessionId))
+        {
+            _sessionId = run.SessionId;
         }
     }
 
@@ -220,8 +278,35 @@ public sealed class AgentConsoleViewModel : INotifyPropertyChanged
                 IsEnabled = ProviderEnabled,
             }).ConfigureAwait(true);
         ApplyProviderView(providerView);
-        Messages.Add($"Agent: {providerView.Provider} 配置已保存，API Key: {(providerView.HasApiKey ? "已配置" : "未配置")}。");
+        AddAgentMessage($"{providerView.Provider} 配置已保存，API Key: {(providerView.HasApiKey ? "已配置" : "未配置")}。");
         Log("ProviderSettingsSaved", $"{providerView.Provider} {providerView.Model}");
+    }
+
+    private void StartVisibleUserTurn(string message)
+    {
+        if (Messages.Count > 0)
+        {
+            Messages.Add(string.Empty);
+            Messages.Add(string.Empty);
+        }
+
+        if (LogLines.Count > 0)
+        {
+            LogLines.Add(string.Empty);
+            LogLines.Add(string.Empty);
+        }
+
+        AddConversationLine("我", message);
+    }
+
+    private void AddAgentMessage(string message)
+    {
+        AddConversationLine("Agent", message);
+    }
+
+    private void AddConversationLine(string speaker, string message)
+    {
+        Messages.Add($"--- {speaker}: {message}");
     }
 
     private async Task LoadProviderSettingsAsync()
@@ -236,6 +321,7 @@ public sealed class AgentConsoleViewModel : INotifyPropertyChanged
 
         if (providerView == null)
         {
+            Log("ProviderSettingsNotFound", "未找到已保存的模型配置，保留默认值。");
             return;
         }
 
@@ -286,6 +372,24 @@ public sealed class AgentConsoleViewModel : INotifyPropertyChanged
             "GPT" => "GPT",
             _ => string.IsNullOrWhiteSpace(provider) ? "GPT" : provider,
         };
+    }
+
+    private static bool NeedsTemplateTarget(string? followUpMessage)
+    {
+        if (string.IsNullOrWhiteSpace(followUpMessage))
+        {
+            return false;
+        }
+
+        return ContainsOrdinal(followUpMessage, "路基模板目标")
+            || ContainsOrdinal(followUpMessage, "操作的路基模板")
+            || ContainsOrdinal(followUpMessage, "哪个路基模板")
+            || ContainsOrdinal(followUpMessage, "目标模板");
+    }
+
+    private static bool ContainsOrdinal(string? text, string value)
+    {
+        return text != null && text.IndexOf(value, StringComparison.Ordinal) >= 0;
     }
 
     private void ApplyProviderDefaults(string provider)

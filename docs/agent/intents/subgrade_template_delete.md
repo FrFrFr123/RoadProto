@@ -22,6 +22,8 @@
 
 - 删除这个路基模板。
 - 把当前路基模板删掉。
+- 删除刚才创建的模板。
+- delete this template.
 - 删除名为主线路基模板的模板。
 - 移除选中的路基模板。
 
@@ -53,7 +55,7 @@
 
 | 参数 | 类型 | 是否必填 | 来源 | 缺失时处理 |
 | --- | --- | --- | --- | --- |
-| `targetHandle` | string | 是 | 当前选择集、用户输入、候选选择 | 追问或要求 CAD 点选 |
+| `targetHandle` / `TargetMode` | string | 是 | 最近对象上下文、当前选择集、用户输入、候选选择、执行时点选 | 没有目标引用、名称、handle 和可用上下文时追问 |
 | `confirmation` | bool | 是 | WPF 高风险确认 | 未确认不得删除 |
 
 ## 5. 可选参数
@@ -66,12 +68,14 @@
 ## 6. 默认值规则
 
 - 删除不补默认目标。
-- 用户说“当前模板”时，必须从当前选择集解析唯一模板。
+- 用户说“刚才创建的 / 上一次创建的 / 上一个模板”时，优先使用会话最近对象上下文。
+- 用户说“这个模板 / this template”时，不追问目标，生成 `TargetMode=PickOnExecute`，由 RoadProto 本地 Adapter 在执行时点选并校验对象类型。
 - 查询到多个同名模板时，不得默认选择第一个。
 
 ## 7. 校验规则
 
 - 必须定位唯一 `DnSubgradeTemplateEntity`。
+- `TargetMode=PickOnExecute` 的唯一性和类型检查由 RoadProto 本地 Adapter 在 AutoCAD 点选阶段完成。
 - 如果目标被道路模型、配置表或其他实体引用，MVP 默认阻断删除。
 - 删除前必须完成 DryRun 和高风险确认。
 - Tool 必须由 `subgrade_template` Skill 白名单授权。
@@ -81,6 +85,7 @@
 必须追问：
 
 - 目标模板不明确。
+- 没有目标引用、目标名称、目标 handle，也没有可用会话上下文。
 - 当前选择集为空。
 - 当前选择集中有多个路基模板。
 - 名称匹配多个模板。
@@ -115,6 +120,8 @@
 | 是否写 CAD | 是 |
 | 是否必须用户确认 | 是 |
 | 是否需要 DryRun | 是 |
+
+本地 Adapter 执行时按 `targetHandle`、`targetName` 或 `TargetMode=PickOnExecute` 定位唯一 `DnSubgradeTemplateEntity`。定位成功后以写方式打开实体并执行删除；点选到非路基模板对象、名称匹配失败或目标不存在时必须返回失败结果，不得删除其他对象。
 
 ## 11. 执行结果
 

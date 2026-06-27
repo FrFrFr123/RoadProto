@@ -1,6 +1,7 @@
 using System;
 using System.Diagnostics;
 using System.IO;
+using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -16,22 +17,29 @@ public partial class AgentConsolePalette : UserControl
 
     public AgentConsolePalette()
     {
+        ProbeLifecycle("Before InitializeComponent");
         InitializeComponent();
+        ProbeLifecycle("After InitializeComponent");
         DataContext = _viewModel;
+        ProbeLifecycle("After DataContext");
         Loaded += OnLoaded;
     }
 
     private async void OnLoaded(object sender, RoutedEventArgs e)
     {
+        ProbeLifecycle("Loaded");
         Loaded -= OnLoaded;
         BeginInitializeAsync();
     }
 
     private void BeginInitializeAsync()
     {
+        ProbeLifecycle("Before BeginInitializeDispatch");
         Dispatcher.BeginInvoke(new Action(async () =>
         {
+            ProbeLifecycle("Before InitializeAfterHost");
             await InitializeAfterHostAsync();
+            ProbeLifecycle("After InitializeAfterHost");
         }), DispatcherPriority.ContextIdle);
     }
 
@@ -39,10 +47,13 @@ public partial class AgentConsolePalette : UserControl
     {
         try
         {
+            ProbeLifecycle("Before ViewModelInitialize");
             await _viewModel.InitializeAsync();
+            ProbeLifecycle("After ViewModelInitialize");
         }
         catch (Exception ex)
         {
+            ProbeLifecycle("ViewModelInitializeException " + ex);
             _viewModel.Messages.Add("Agent: " + ex.Message);
         }
     }
@@ -165,5 +176,22 @@ public partial class AgentConsolePalette : UserControl
                 _isRestoringInputFocus = false;
             }
         }), DispatcherPriority.Input);
+    }
+
+    private static void ProbeLifecycle(string message)
+    {
+        try
+        {
+            var directory = @"F:\0_GPT_RoadProtoAgentRuntime\logs\roadproto";
+            Directory.CreateDirectory(directory);
+            var line = $"{DateTimeOffset.Now:O} AgentConsolePalette {message}{Environment.NewLine}";
+            File.AppendAllText(
+                Path.Combine(directory, "agent_palette_startup_probe.log"),
+                line,
+                Encoding.UTF8);
+        }
+        catch
+        {
+        }
     }
 }

@@ -1,7 +1,9 @@
 using RoadProto.Terrain.UI.Agent;
+using RoadProto.Terrain.UI.Agent.Models;
 using RoadProto.Terrain.UI.Bridge;
 using System.Globalization;
 using System.Linq;
+using System.Runtime.Serialization.Json;
 using System.Text;
 using System.Threading;
 
@@ -1867,46 +1869,87 @@ static void AgentConsoleRibbonAndCommandSourceContractsExist()
     var root = FindRepoRoot();
     var ribbon = File.ReadAllText(Path.Combine(root, "src", "ui", "wpf", "RoadProto.Terrain.UI", "AutoCad", "RoadProtoRibbonExtension.cs"), Encoding.UTF8);
     var commandPath = Path.Combine(root, "src", "ui", "wpf", "RoadProto.Terrain.UI", "Agent", "AgentConsoleCommands.cs");
+    var safePanelPath = Path.Combine(root, "src", "ui", "wpf", "RoadProto.Terrain.UI", "Agent", "AgentConsoleSafePanel.cs");
     var xamlPath = Path.Combine(root, "src", "ui", "wpf", "RoadProto.Terrain.UI", "Agent", "AgentConsolePalette.xaml");
     var paletteCodePath = Path.Combine(root, "src", "ui", "wpf", "RoadProto.Terrain.UI", "Agent", "AgentConsolePalette.xaml.cs");
     var viewModelPath = Path.Combine(root, "src", "ui", "wpf", "RoadProto.Terrain.UI", "Agent", "AgentConsoleViewModel.cs");
+    var cadContextPath = Path.Combine(root, "src", "ui", "wpf", "RoadProto.Terrain.UI", "Agent", "AgentCadContextProvider.cs");
+    var formatterPath = Path.Combine(root, "src", "ui", "wpf", "RoadProto.Terrain.UI", "Agent", "AgentLogFormatter.cs");
     var clientPath = Path.Combine(root, "src", "ui", "wpf", "RoadProto.Terrain.UI", "Agent", "Backend", "AgentBackendClient.cs");
     var dtosPath = Path.Combine(root, "src", "ui", "wpf", "RoadProto.Terrain.UI", "Agent", "Models", "AgentDtos.cs");
     var bridgePath = Path.Combine(root, "src", "ui", "wpf", "RoadProto.Terrain.UI", "Agent", "Bridge", "AgentLocalToolBridge.cs");
     var nativeAgentConsolePath = Path.Combine(root, "src", "cad_adapter", "objectarx", "agent", "ObjectArxAgentConsoleCommand.cpp");
+    var nativeSubgradeTemplateCommandPath = Path.Combine(root, "src", "cad_adapter", "objectarx", "cross_section", "ObjectArxSubgradeTemplateCommand.cpp");
     Check(File.Exists(commandPath), "agent console command source should exist");
     Check(File.Exists(xamlPath), "agent console palette XAML should exist");
     Check(File.Exists(bridgePath), "agent local tool bridge should exist");
     Check(File.Exists(nativeAgentConsolePath), "native agent console command source should exist");
+    Check(File.Exists(cadContextPath), "agent CAD context provider source should exist");
+    Check(File.Exists(nativeSubgradeTemplateCommandPath), "native subgrade template command source should exist");
 
     var command = File.ReadAllText(commandPath, Encoding.UTF8);
+    var safePanel = File.ReadAllText(safePanelPath, Encoding.UTF8);
     var xaml = File.ReadAllText(xamlPath, Encoding.UTF8);
     var paletteCode = File.ReadAllText(paletteCodePath, Encoding.UTF8);
     var viewModel = File.ReadAllText(viewModelPath, Encoding.UTF8);
+    var cadContext = File.ReadAllText(cadContextPath, Encoding.UTF8);
+    var formatter = File.ReadAllText(formatterPath, Encoding.UTF8);
     var client = File.ReadAllText(clientPath, Encoding.UTF8);
     var dtos = File.ReadAllText(dtosPath, Encoding.UTF8);
     var bridge = File.ReadAllText(bridgePath, Encoding.UTF8);
     var nativeAgentConsole = File.ReadAllText(nativeAgentConsolePath, Encoding.UTF8);
+    var nativeSubgradeTemplateCommand = File.ReadAllText(nativeSubgradeTemplateCommandPath, Encoding.UTF8);
     var combined = ribbon + "\n" + command + "\n" + xaml + "\n" + paletteCode + "\n" + viewModel + "\n" + client + "\n" + dtos + "\n" + bridge;
 
     Check(combined.Contains("CommandClass(typeof(RoadProto.Terrain.UI.Agent.AgentConsoleCommands))"), "agent command class should be registered");
     Check(combined.Contains("AgentPanelId"), "ribbon should define an agent panel id");
     Check(combined.Contains("AgentConsoleButtonId"), "ribbon should define an agent console button id");
-    Check(ribbon.Contains("OpenAgentConsoleCommandHandler"), "agent ribbon button should open the palette directly without AutoCAD command queue forwarding");
+    Check(ribbon.Contains("OpenAgentConsoleCommandHandler"), "agent ribbon button should route through a dedicated handler");
+    Check(ribbon.Contains("QueueCommandFromRibbon(parameter)"), "agent ribbon handler should queue the native RD_AGENT_CONSOLE command through AutoCAD");
+    Check(!ribbon.Contains("new RoadProto.Terrain.UI.Agent.AgentConsoleCommands().ShowAgentConsole()"), "agent ribbon handler should not create the PaletteSet directly from the Ribbon click event");
     Check(!ribbon.Contains("AgentConsoleButtonId,\r\n                \"Agent 控制台\",\r\n                \"打开可停靠的可控工程 Agent 控制台\",\r\n                \"RD_AGENT_CONSOLE_UI "), "agent ribbon button should not send the managed palette command through SendStringToExecute");
     Check(nativeAgentConsole.Contains("RD_AGENT_CONSOLE_UI "), "native agent console command should still expose the command-line forwarding fallback");
     Check(
         nativeAgentConsole.Contains("RoadProto.Terrain.UI.dll") && nativeAgentConsole.Contains("_.NETLOAD"),
         "native agent console command should ensure the managed palette assembly is loaded before forwarding");
-    Check(command.Contains("PaletteSet"), "agent command should create an AutoCAD PaletteSet");
-    Check(command.Contains("WpfControls.Grid") && command.Contains("_palette.AddVisual(\"Agent\", _wpfHost, false)"), "agent palette should register an empty WPF host with AddVisual before adding the full Agent control");
-    Check(command.Contains("_wpfHost.Children.Add(paletteContent)"), "agent command should attach the full Agent WPF control after the WPF host is registered");
+    Check(command.Contains("PaletteSet"), "agent command should use AutoCAD PaletteSet so the Agent console can dock and snap");
+    Check(command.Contains("AddVisual") && command.Contains("CreateStartupContent()"), "agent command should register a minimal WPF Palette host before attaching the Agent console");
+    Check(command.Contains("DockEnabled") && command.Contains("DockSides.Right") && command.Contains("Dock = DockSides.Right"), "agent palette should allow docking and default to the right side");
+    Check(command.Contains("DispatcherPriority.ContextIdle") && command.Contains("AttachAgentConsoleAsync"), "agent command should defer safe Agent console attachment until the Palette host is visible");
+    Check(!command.Contains("new AgentConsolePalette()"), "agent command should not attach the crash-prone XAML AgentConsolePalette in AutoCAD 2021");
+    Check(command.Contains("var panel = new AgentConsoleSafePanel()") && command.Contains("hostGrid.Children.Add(panel)"), "agent command should attach the code-built safe Agent panel only after the dockable Palette host is shown");
+    Check(File.Exists(safePanelPath), "safe agent console panel source should exist");
+    Check(
+        command.Contains("hostGrid.RowDefinitions.Clear()")
+            && command.Contains("hostGrid.ColumnDefinitions.Clear()")
+            && command.Contains("hostGrid.Margin = new System.Windows.Thickness(0)"),
+        "agent command should reset the startup host layout before attaching the safe panel so the content fills the docked Palette");
+    Check(
+        command.Contains("panel.HorizontalAlignment = System.Windows.HorizontalAlignment.Stretch")
+            && command.Contains("panel.VerticalAlignment = System.Windows.VerticalAlignment.Stretch"),
+        "agent command should attach the safe panel with stretch alignment for Palette resizing");
+    Check(
+        command.Contains("_palette.SizeChanged")
+            && command.Contains("ApplyPaletteSizeToHost")
+            && command.Contains("palette.Size.Width")
+            && command.Contains("palette.Size.Height")
+            && command.Contains("panel.Width = width")
+            && command.Contains("panel.Height = height"),
+        "agent command should explicitly drive the WPF host and safe panel size from PaletteSet resize events because AutoCAD AddVisual does not reliably stretch WPF content");
+    Check(
+        safePanel.Contains("HorizontalAlignment = HorizontalAlignment.Stretch")
+            && safePanel.Contains("VerticalAlignment = VerticalAlignment.Stretch"),
+        "safe agent console panel should stretch to the available Palette host size");
+    Check(
+        safePanel.Contains("new GridLength(2, GridUnitType.Star)")
+            && safePanel.Contains("new GridLength(1, GridUnitType.Star)")
+            && !safePanel.Contains("new GridLength(150)"),
+        "safe agent console message and log regions should use proportional star rows instead of a fixed log height");
+    Check(!command.Contains("ShowModelessWindow") && !command.Contains("System.Windows.Window"), "agent command should not fall back to a non-dockable modeless Window for the default UI");
+    Check(command.Contains("Before PaletteSet") && command.Contains("After Dock"), "agent command should leave probe breadcrumbs around dockable Palette startup");
     Check(!command.Contains("ElementHost"), "agent production palette path should not use ElementHost because AutoCAD 2021 can crash while parenting it");
     Check(!command.Contains("PaletteGuid"), "agent palette should not use a persisted guid until AutoCAD 2021 palette state corruption is ruled out");
-    Check(command.Contains("Size = new Size(560, 720)") && command.Contains("MinimumSize = new Size(480, 560)"), "agent palette should open wider by default");
-    Check(!command.Contains("Dock = DockSides.Right,"), "agent palette should not set Dock in the PaletteSet initializer because AutoCAD 2021 can hang while adding hosted controls");
-    Check(command.Contains("DockEnabled = DockSides.Right") && command.Contains("Dock = DockSides.Right"), "agent palette should dock on the right by default");
-    Check(command.Contains("PaletteSetStyles.Snappable") && command.Contains("PaletteSetStyles.SingleColDock"), "agent palette should use AutoCAD docking styles");
+    Check(command.Contains("Size(560, 720)") && command.Contains("MinimumSize"), "agent palette should open wider by default");
     Check(!command.Contains("KeepFocus"), "agent palette should not set KeepFocus because it can destabilize AutoCAD host focus");
     Check(!command.Contains("throw;"), "agent palette command should not rethrow UI startup exceptions into AutoCAD host");
     Check(xaml.Contains("ProviderBox"), "agent palette should expose provider settings");
@@ -1926,16 +1969,41 @@ static void AgentConsoleRibbonAndCommandSourceContractsExist()
     Check(paletteCode.Contains("InputBox.Clear()"), "agent input should clear after sending");
     Check(paletteCode.Contains("RestoreInputFocusAsync"), "agent input should restore keyboard focus asynchronously to reduce AutoCAD command-line focus jumps");
     Check(paletteCode.Contains("BeginInitializeAsync"), "agent palette should delay backend initialization until after AutoCAD hosts the palette");
+    Check(paletteCode.Contains("ProbeLifecycle(\"Before InitializeComponent\")") && paletteCode.Contains("ProbeLifecycle(\"Before ViewModelInitialize\")"), "agent palette should probe WPF lifecycle stages before backend initialization");
     Check(!paletteCode.Contains("OnInputGotKeyboardFocus"), "agent palette should not recursively restore focus from GotKeyboardFocus");
     Check(!paletteCode.Contains("FocusInputBox();"), "agent palette should not synchronously force focus during palette load");
     Check(client.Contains("GetModelProvidersAsync") && client.Contains("api/settings/models"), "agent backend client should load saved model provider settings");
     Check(client.Contains("CancelAsync") && client.Contains("/cancel"), "agent backend client should cancel awaiting confirmation runs");
     Check(client.Contains("SaveModelProviderAsync") && client.Contains("api/settings/models/{provider}"), "agent backend client should save model provider settings");
     Check(client.Contains("PostToolResultAsync") && client.Contains("/tool-result"), "agent backend client should post local tool results");
+    Check(client.Contains("CurrentTemplateHandle = currentTemplateHandle"), "agent backend client should send current CAD template handle to backend requests");
+    Check(client.Contains("CurrentTemplateName = currentTemplateName"), "agent backend client should send current CAD template name to backend requests");
     Check(viewModel.Contains("SaveProviderAsync"), "agent view model should save provider settings through backend");
     Check(viewModel.Contains("LoadProviderSettingsAsync") && viewModel.Contains("ApplyProviderView"), "agent view model should restore last saved provider settings on open");
+    Check(viewModel.Contains("BackendEnsureStarted") && viewModel.Contains("BackendEnsureCompleted") && viewModel.Contains("ProviderSettingsLoadStarted"), "agent view model should log initialization stages before PanelOpened");
     Check(viewModel.Contains("MessagesText") && viewModel.Contains("LogText"), "agent view model should expose selectable text projections for chat and logs");
     Check(viewModel.Contains("_loggedEventKeys") && viewModel.Contains("run.Events"), "agent view model should render backend flow events without duplicate visible logs");
+    Check(viewModel.Contains("_cadContextProvider.CaptureForMessage(message)"), "agent view model should capture CAD selection context before sending a user turn");
+    Check(viewModel.Contains("cadContext.CurrentTemplateHandle") && viewModel.Contains("cadContext.CurrentTemplateName"), "agent view model should pass CAD selection context into start and continuation calls");
+    Check(viewModel.Contains("CanPickTarget") && viewModel.Contains("PickTargetAsync"), "agent view model should expose a pick-target action while awaiting a missing template target");
+    Check(cadContext.Contains("SelectImplied()"), "agent CAD context provider should read AutoCAD implied selection for selected-template references");
+    Check(cadContext.Contains("PickSubgradeTemplate") && cadContext.Contains("PromptEntityOptions") && cadContext.Contains("GetEntity"), "agent CAD context provider should support explicit point-picking of a subgrade template target");
+    Check(cadContext.Contains("DNSUBGRADETEMPLATEENTITY"), "agent CAD context provider should only pass selected subgrade template entity handles");
+    Check(cadContext.Contains("CurrentTemplateReferenceWords"), "agent CAD context provider should only capture context for strong current/selected-template wording");
+    Check(safePanel.Contains("_pickTargetPanel") && safePanel.Contains("Content = \"点选\""), "safe agent console panel should show a point-pick button for missing template target follow-ups");
+    Check(
+        formatter.Contains("IndentLogLine")
+            && formatter.Contains("IndentDetailLines")
+            && formatter.Contains("LogLineMarker")
+            && formatter.Contains("EnsureLogLineMarker")
+            && formatter.Contains("\"---\""),
+        "agent visible flow logs should indent and prefix every visible diagnostic line with --- for readability");
+    Check(
+        viewModel.Contains("StartVisibleUserTurn")
+            && viewModel.Contains("Messages.Add(string.Empty)")
+            && viewModel.Contains("LogLines.Add(string.Empty)")
+            && viewModel.Contains("$\"--- {speaker}: {message}\""),
+        "agent visible chat and flow logs should separate each user turn with blank lines and prefix sentences with ---");
     Check(viewModel.Contains("CancelAsync"), "agent view model should support cancelling a pending confirmation from the conversation area");
     Check(viewModel.Contains("AgentLocalToolBridge"), "agent view model should dispatch confirmed tools through local bridge");
     Check(dtos.Contains("ModelProviderUpdateDto"), "agent DTOs should include provider update payload");
@@ -1943,11 +2011,17 @@ static void AgentConsoleRibbonAndCommandSourceContractsExist()
     Check(dtos.Contains("Name = \"updatedAt\""), "agent provider DTO should expose updated time for last-used provider selection");
     Check(dtos.Contains("AgentToolResultDto"), "agent DTOs should include tool result payload");
     Check(dtos.Contains("SubgradeTemplateCreateArgumentsDto"), "agent DTOs should include subgrade tool arguments");
+    Check(dtos.Contains("TargetMode") && dtos.Contains("TargetRef"), "agent subgrade arguments should expose target mode and target ref");
+    Check(dtos.Contains("SubgradeTemplateComponentOperationArgumentDto"), "agent DTOs should include subgrade component operation arguments");
+    Check(dtos.Contains("SubgradeTemplateComponentPatchArgumentDto"), "agent DTOs should include subgrade component patch arguments");
+    Check(dtos.Contains("List<SubgradeTemplateComponentOperationArgumentDto> ComponentOperations"), "agent subgrade arguments should carry component operations");
     Check(dtos.Contains("AgentId") && dtos.Contains("SkillId") && dtos.Contains("IntentId"), "agent plan DTO should expose AgentId, SkillId, and IntentId");
     Check(dtos.Contains("RiskLevel") && dtos.Contains("FollowUpMessage") && dtos.Contains("ResultMessage"), "agent plan DTO should expose risk, follow-up, and result messages");
     Check(dtos.Contains("AgentRunDto") && dtos.Contains("Name = \"followUpMessage\""), "agent run DTO should expose follow-up message for awaiting user input state");
     Check(dtos.Contains("AgentEntryRouteDto") && dtos.Contains("Name = \"entryRoute\""), "agent run DTO should expose entry route result");
     Check(dtos.Contains("AgentRunUserInputRequestDto"), "agent DTOs should include user input continuation payload");
+    Check(dtos.Contains("Name = \"currentTemplateHandle\"") && dtos.Contains("CurrentTemplateHandle"), "agent DTOs should expose current template handle in run and user-input requests");
+    Check(dtos.Contains("Name = \"currentTemplateName\"") && dtos.Contains("CurrentTemplateName"), "agent DTOs should expose current template name in run and user-input requests");
     Check(client.Contains("PostUserInputAsync") && client.Contains("/user-input"), "agent backend client should post user input continuation");
     Check(viewModel.Contains("AwaitingUserInput"), "agent view model should handle follow-up state");
     Check(viewModel.Contains("run.FollowUpMessage") && viewModel.Contains("请补充必要信息"), "agent view model should prefer run-level follow-up message before fallback text");
@@ -1962,6 +2036,13 @@ static void AgentConsoleRibbonAndCommandSourceContractsExist()
     Check(bridge.Contains("SubgradeTemplate.Delete"), "agent local bridge should support subgrade delete tool");
     Check(bridge.Contains("SubgradeTemplate.Query"), "agent local bridge should support subgrade query tool");
     Check(bridge.Contains("RD_AGENT_SUBGRADE_TEMPLATE_TOOL_FILE"), "agent local bridge should queue native subgrade CRUD tool command");
+    Check(bridge.Contains("Write(\"targetMode\", arguments.TargetMode") && bridge.Contains("Write(\"targetRef\", arguments.TargetRef"), "agent local bridge should pass target mode and target ref to native CRUD tool requests");
+    Check(bridge.Contains("componentOperationCount") && bridge.Contains("AppendComponentOperationLines"), "agent local bridge should serialize component operations to native CRUD tool requests");
+    Check(bridge.Contains("new UTF8Encoding(false)"), "agent local bridge should write native request files as UTF-8 without BOM");
+    Check(!bridge.Contains("File.WriteAllLines(requestPath, lines"), "agent local bridge should not write native request files through WriteAllLines");
+    Check(bridge.Contains("File.WriteAllText(requestPath, string.Join(\"\\n\", lines), new UTF8Encoding(false))"), "agent local bridge should write native request files with LF line endings");
+    Check(bridge.Contains(".patch.widthDelta") && bridge.Contains(".patch.hasOuterCurb"), "agent local bridge should serialize component operation patch fields");
+    Check(bridge.Contains("AppendStationRows") && bridge.Contains(".patch.widening") && bridge.Contains(".patch.slopeTable"), "agent local bridge should serialize component operation patch station tables");
     Check(dtos.Contains("double? LaneWidth"), "agent DTOs should not define local lane width defaults");
     Check(dtos.Contains("double? HardShoulderWidth"), "agent DTOs should not define local hard shoulder defaults");
     Check(dtos.Contains("double? EarthShoulderWidth"), "agent DTOs should not define local earth shoulder defaults");
@@ -1976,6 +2057,11 @@ static void AgentConsoleRibbonAndCommandSourceContractsExist()
     Check(!bridge.Contains("1.0 / arguments.SlopeRatio"), "agent local bridge should not derive template slopes from slopeRatio");
     Check(!bridge.Contains("Width = width > 0.0 ? width : 0.75"), "agent local bridge should not fall back to a hardcoded width");
     Check(viewModel.Contains("AgentLogFormatter.Format"), "agent view model should render readable flow log lines");
+    Check(
+        nativeSubgradeTemplateCommand.Contains("zoomToEntity(entityId)")
+            && nativeSubgradeTemplateCommand.Contains("RTSTR, L\"_.ZOOM\"")
+            && nativeSubgradeTemplateCommand.Contains("RTSTR, L\"_Object\""),
+        "native subgrade template create command should focus the viewport on the newly created entity");
 }
 
 static void AgentLogFormatterMapsInternalStagesToReadableChinese()
@@ -1991,6 +2077,7 @@ static void AgentLogFormatterMapsInternalStagesToReadableChinese()
     var toolArgs = AgentLogFormatter.Format("ToolArgumentsPrepared", "RoadGrade=Expressway; Components=8; Left TravelLane width=7.5");
 
     Check(succeeded.Contains("任务已成功完成", StringComparison.Ordinal), "agent log formatter should explain succeeded task state");
+    Check(succeeded.StartsWith("  --- ", StringComparison.Ordinal), "agent log formatter should prefix the first visible line with ---");
     Check(succeeded.Contains("task_123", StringComparison.Ordinal), "agent log formatter should keep task id for troubleshooting");
     Check(!succeeded.StartsWith("RunUpdated:", StringComparison.Ordinal), "agent log formatter should hide raw stage prefixes in the visible log");
     Check(routed.Contains("入口路由", StringComparison.Ordinal) && routed.Contains("工作流候选", StringComparison.Ordinal), "agent log formatter should explain route type");
@@ -2002,6 +2089,57 @@ static void AgentLogFormatterMapsInternalStagesToReadableChinese()
     Check(model.Contains("调用大模型", StringComparison.Ordinal), "agent log formatter should explain model-backed chat answers");
     Check(planOutput.Contains("计划输出", StringComparison.Ordinal) && planOutput.Contains("SubgradeTemplate.Create", StringComparison.Ordinal), "agent log formatter should show readable plan output");
     Check(toolArgs.Contains("工具参数", StringComparison.Ordinal) && toolArgs.Contains("Components=8", StringComparison.Ordinal), "agent log formatter should show readable tool argument output");
+    var multiline = AgentLogFormatter.Format("IntentRecognized", "--- 技术串 Status=Planned（已生成计划）\n--- 系统解释 Intent=subgrade_template.create（创建路基模板意图）");
+    Check(multiline.Contains(Environment.NewLine + "    --- 系统解释", StringComparison.Ordinal), "agent log formatter should keep nested backend diagnostic lines prefixed with ---");
+}
+
+static void AgentSubgradeArgumentsDeserializeComponentOperationsFromBackendJson()
+{
+    const string json = """
+    {
+      "Operation": "modify",
+      "TemplateName": "默认路基模板",
+      "TargetHandle": "ABCD",
+      "TargetMode": "ByHandle",
+      "TargetRef": "刚才创建的",
+      "SideScope": "Both",
+      "Components": [],
+      "ComponentOperations": [
+        {
+          "Operation": "modifyComponent",
+          "SideScope": "Both",
+          "ComponentType": "TravelLane",
+          "Occurrence": "all",
+          "Patch": {
+            "WidthDelta": 0.5,
+            "ColorR": 255,
+            "HasOuterCurb": true,
+            "WideningTable": [
+              { "Station": 100.0, "Value": 0.25 }
+            ],
+            "VariableSlopeTable": [
+              { "Station": 200.0, "Value": -0.02 }
+            ]
+          }
+        }
+      ]
+    }
+    """;
+    using var stream = new MemoryStream(Encoding.UTF8.GetBytes(json));
+    var serializer = new DataContractJsonSerializer(typeof(SubgradeTemplateCreateArgumentsDto));
+    var arguments = (SubgradeTemplateCreateArgumentsDto)serializer.ReadObject(stream)!;
+
+    Check(arguments.ComponentOperations.Count == 1, "agent subgrade arguments should deserialize backend component operations");
+    var operation = arguments.ComponentOperations[0];
+    Check(operation.Operation == "modifyComponent", "component operation should keep operation code");
+    Check(operation.Occurrence == "all", "component operation occurrence should use string contract");
+    Check(operation.Patch.WidthDelta == 0.5, "component operation patch should keep width delta");
+    Check(operation.Patch.ColorR == 255, "component operation patch should keep nullable color channel");
+    Check(operation.Patch.HasOuterCurb == true, "component operation patch should keep nullable bool values");
+    Check(operation.Patch.WideningTable.Count == 1, "component operation patch should deserialize widening station table");
+    Check(operation.Patch.WideningTable[0].Value == 0.25, "component operation patch should keep widening station value");
+    Check(operation.Patch.VariableSlopeTable.Count == 1, "component operation patch should deserialize variable slope station table");
+    Check(operation.Patch.VariableSlopeTable[0].Value == -0.02, "component operation patch should keep variable slope value");
 }
 
 ResponseWritesPickTerrainAction();
@@ -2036,4 +2174,5 @@ PavementLayerTemplateCreateRequestUsesMainlinePresetWithoutShowingWizard();
 PavementLayerTemplateRibbonAndCommandSourceContractsExist();
 AgentConsoleRibbonAndCommandSourceContractsExist();
 AgentLogFormatterMapsInternalStagesToReadableChinese();
+AgentSubgradeArgumentsDeserializeComponentOperationsFromBackendJson();
 Console.WriteLine("All RoadProto managed bridge tests passed.");

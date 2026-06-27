@@ -82,10 +82,13 @@
 | --- | --- | --- | --- |
 | `targetHandle` | string | 修改、删除、查询指定模板 | 当前选择集、用户输入、候选列表 |
 | `targetName` | string | 按名称定位模板 | 用户输入、实体摘要 |
+| `targetMode` | enum | 目标定位模式 | 规则层归一化，支持 `ByHandle`、`ByName`、`PickOnExecute`、`All` |
+| `targetRef` | string | 用户原始目标表达 | 用户输入，例如“这个模板”“刚才创建的模板” |
 | `roadGrade` | enum | 创建或修改道路等级 | 用户输入，缺失时按 Intent 规则追问 |
 | `templateName` | string | 模板名称 | Agent 规则文件或用户输入 |
 | `displayScale` | number | 模板显示比例 | Agent 规则文件或用户输入 |
 | `components` | array | 创建时完整部件列表 | `defaultComponentsByRoadGrade` + 用户覆盖 |
+| `componentOperations` | array | 修改时部件级增删改操作 | 用户输入 + 规则层归一化 |
 | `laneWidth` | number | 行车道宽度覆盖项 | 用户明确输入 |
 | `laneWidthDelta` | number | 行车道宽度增量 | 用户明确输入 |
 | `hardShoulderWidth` | number | 硬路肩宽度覆盖项 | 用户明确输入 |
@@ -101,9 +104,12 @@
 - 默认值来源必须是后端机器规则文件或明确上下文，不是 LLM。
 - 当前 MVP 创建默认值写在 `F:\0_GPT_RoadProtoAgentBackend\rules\intents\subgrade_template.create.yaml`。
 - 创建时由规则引擎读取 `defaultSource: agent-rule` / `defaultValue` 补全模板名称、显示比例和单位。
-- 创建时由规则引擎读取 `defaultComponentsByRoadGrade` 补全道路等级对应的完整组件列表。
+- 创建时由规则引擎读取 `defaultComponentsByRoadGrade` 补全道路等级对应的完整组件列表；当前必须覆盖高速公路、一级公路、二级公路、三级公路、四级公路、城市快速路、城市主干路、城市次干路和城市支路。
+- 道路等级、侧别、部件类型、操作类型和插入位置必须先归一化成稳定编码，再进入 Tool 参数。用户说“二级”“2”“二级路”“二级道路”“先生成一个二级的吧”时，规则层应统一识别为 `SecondClass`；无法归一化时必须追问或阻断，不能把原始中文直接交给本地 Adapter 猜测。
 - RoadProto 本地 Tool Adapter 只负责执行和校验，不补行车道、硬路肩、土路肩、中央分隔带、坡度、颜色、路缘石或单位默认值。
 - 修改时以实体原值为基础，只覆盖用户明确指定的字段。
+- 修改和删除必须先解析目标对象，再处理会被目标影响的二级追问。例如“修改这个模板，删除右侧土路肩”应先生成 `TargetMode=PickOnExecute`，由本地 Adapter 点选并校验对象；只有目标已能定位时，才继续追问缺失的左侧、右侧或两侧。
+- 部件级修改使用 `componentOperations` 表达，支持 `modifyComponent`、`addComponent` 和 `deleteComponent`，并保留 `sideScope`、`componentType`、`occurrence`、`positionMode`、`anchorType` 和 `patch`。`patch` 可覆盖宽度、宽度增量、高度、坡度、颜色、内外侧路缘石、路面结构层引用、变宽表和坡度变化表。
 - 删除时不补参数，只定位目标对象并做风险校验。
 - 查询时允许目标为空，表示查询当前图中所有路基模板摘要。
 - 用户只说总宽时，不自动拆分各部件，必须追问或进入专门总宽分配规则。

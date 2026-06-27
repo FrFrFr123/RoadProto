@@ -1144,6 +1144,30 @@ public sealed class RoadProtoRibbonExtension : IExtensionApplication
         return new DrawingImage(drawingGroup);
     }
 
+    private static void QueueCommandFromRibbon(object? parameter)
+    {
+        var command = ResolveCommand(parameter);
+        if (string.IsNullOrWhiteSpace(command))
+        {
+            return;
+        }
+
+        var document = CoreApplication.DocumentManager.MdiActiveDocument;
+        var commandText = command!.Trim();
+        document?.SendStringToExecute("\x03\x03" + commandText + " ", true, false, true);
+    }
+
+    private static string? ResolveCommand(object? parameter)
+    {
+        if (parameter is string command)
+        {
+            return command;
+        }
+
+        var commandParameter = parameter?.GetType().GetProperty("CommandParameter");
+        return commandParameter?.GetValue(parameter) as string;
+    }
+
     private sealed class SendCommandHandler : ICommand
     {
         public event EventHandler? CanExecuteChanged
@@ -1156,26 +1180,7 @@ public sealed class RoadProtoRibbonExtension : IExtensionApplication
 
         public void Execute(object? parameter)
         {
-            var command = ResolveCommand(parameter);
-            if (string.IsNullOrWhiteSpace(command))
-            {
-                return;
-            }
-
-            var document = CoreApplication.DocumentManager.MdiActiveDocument;
-            var commandText = command!.Trim();
-            document?.SendStringToExecute("\x03\x03" + commandText + " ", true, false, true);
-        }
-
-        private static string? ResolveCommand(object? parameter)
-        {
-            if (parameter is string command)
-            {
-                return command;
-            }
-
-            var commandParameter = parameter?.GetType().GetProperty("CommandParameter");
-            return commandParameter?.GetValue(parameter) as string;
+            QueueCommandFromRibbon(parameter);
         }
     }
 
@@ -1193,7 +1198,7 @@ public sealed class RoadProtoRibbonExtension : IExtensionApplication
         {
             try
             {
-                new RoadProto.Terrain.UI.Agent.AgentConsoleCommands().ShowAgentConsole();
+                QueueCommandFromRibbon(parameter);
             }
             catch (System.Exception error)
             {

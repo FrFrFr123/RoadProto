@@ -36,9 +36,20 @@ public sealed class AgentBackendClient
         return await ReadJsonAsync<AgentHealthDto>(response).ConfigureAwait(false);
     }
 
-    public async Task<AgentRunDto> StartRunAsync(string? sessionId, string message, CancellationToken cancellationToken = default)
+    public async Task<AgentRunDto> StartRunAsync(
+        string? sessionId,
+        string message,
+        string? currentTemplateHandle = null,
+        string? currentTemplateName = null,
+        CancellationToken cancellationToken = default)
     {
-        var request = new StartAgentRunRequestDto { SessionId = sessionId, Message = message };
+        var request = new StartAgentRunRequestDto
+        {
+            SessionId = sessionId,
+            Message = message,
+            CurrentTemplateHandle = currentTemplateHandle,
+            CurrentTemplateName = currentTemplateName,
+        };
         using var response = await _httpClient.PostAsync("api/agent/runs", CreateJsonContent(request), cancellationToken).ConfigureAwait(false);
         response.EnsureSuccessStatusCode();
         return await ReadJsonAsync<AgentRunDto>(response).ConfigureAwait(false);
@@ -61,9 +72,16 @@ public sealed class AgentBackendClient
     public async Task<AgentRunDto> PostUserInputAsync(
         string taskId,
         string message,
+        string? currentTemplateHandle = null,
+        string? currentTemplateName = null,
         CancellationToken cancellationToken = default)
     {
-        var request = new AgentRunUserInputRequestDto { Message = message };
+        var request = new AgentRunUserInputRequestDto
+        {
+            Message = message,
+            CurrentTemplateHandle = currentTemplateHandle,
+            CurrentTemplateName = currentTemplateName,
+        };
         using var response = await _httpClient
             .PostAsync($"api/agent/runs/{taskId}/user-input", CreateJsonContent(request), cancellationToken)
             .ConfigureAwait(false);

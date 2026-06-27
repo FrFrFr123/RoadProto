@@ -1,6 +1,6 @@
 # 可控工程 Agent 文档区
 
-本目录是 RoadProto 可控工程 Agent 的独立文档区。它描述 Agent 底座、独立后端仓库、RoadProto 本地 `AGENT` 薄模块、WPF 可停靠 Agent Console、Agent / Skill / Intent、Schema / Rule / Tool / Adapter / DryRun / Approval / Trace 的边界和扩展方式。
+本目录是 RoadProto 可控工程 Agent 的独立文档区。它描述 Agent 底座、独立后端仓库、RoadProto 本地 `AGENT` 薄模块、WPF Agent Console、Agent / Skill / Intent、Schema / Rule / Tool / Adapter / DryRun / Approval / Trace 的边界和扩展方式。
 
 Agent 文档区不替代 `docs/business/`、`docs/modules/` 和 `docs/reuse/`：
 
@@ -33,7 +33,7 @@ F:\0_GPT_RoadProtoAgentBackend
 MVP 必须保留完整链路，当前版本已实现基础闭环：
 
 ```text
-WPF 可停靠 Agent Console
+WPF Agent Console
 -> RoadProto 本地 AGENT 薄模块
 -> HTTP Client
 -> 独立 Agent 后端服务
@@ -95,19 +95,19 @@ RoadProto Agent 总流程固定按以下十二层组织：
 - Agent 后端服务外置并位于独立仓库 `F:\0_GPT_RoadProtoAgentBackend`。
 - 后端负责 Agent 编排、任务状态机、模型网关、API Key 加密保存、Schema 校验、规则引擎、Tool Registry、Trace、日志和评测治理。
 - RoadProto 内新增独立 `AGENT` 薄模块，只负责 WPF 入口、HTTP 通信、本地上下文摘要、受控工具适配、DryRun / 执行桥接和本地 Trace 镜像。
-- 不新增独立 Web 前端，不嵌入 WebView。用户交互统一放在 AutoCAD 内可停靠 WPF Palette / 面板中。
+- 不新增独立 Web 前端，不嵌入 WebView。用户交互统一放在 AutoCAD 内 WPF Agent Console 中；AutoCAD 2021 当前稳定入口为右侧停靠 `PaletteSet` + `AgentConsoleSafePanel`。
 - WPF 只负责输入、展示、参数修改、审批、模型设置和 Trace 查看，不直接调用模型 API，不直接操作 CAD 实体。
 - 外置后端不能直接修改 DWG。所有 CAD 动作必须经过 RoadProto 本地 `AGENT` 模块和 ObjectARX Adapter。
 - LLM 只负责在已注册 Agent / Skill 范围内做意图识别、参数提取、追问建议和解释，不直接补默认值、不直接推导强规则、不直接调用工具。
 - 默认值必须由后端规则文件或规则引擎补全。当前路基模板创建默认值位于 `F:\0_GPT_RoadProtoAgentBackend\rules\intents\subgrade_template.create.yaml`，RoadProto 本地 Tool Adapter 只负责执行和校验。
-- 路基模板创建的默认值必须按完整组件结构下发。`defaultComponentsByRoadGrade` 是规则层字段，RoadProto 本地不得用 `laneWidth`、`hardShoulderWidth`、`earthShoulderWidth`、`medianWidth` 或 `slopeRatio` 等标量重新拼默认模板。
+- 路基模板创建的默认值必须按完整组件结构下发。`defaultComponentsByRoadGrade` 是规则层字段，当前必须覆盖高速公路、一级公路、二级公路、三级公路、四级公路、城市快速路、城市主干路、城市次干路和城市支路；RoadProto 本地不得用 `laneWidth`、`hardShoulderWidth`、`earthShoulderWidth`、`medianWidth` 或 `slopeRatio` 等标量重新拼默认模板。
 - 工程对象必须先在入口路由层分清楚。`道路模型` 是独立工程对象，不属于 `subgrade_template` Skill；当前 MVP 未接入 `road_model` Skill 时必须明确提示不支持，不得误调用路基模板工具。
 - 明确未接入的工程对象应返回终止性 `UnsupportedWorkflow` 结果，不进入 `AwaitingUserInput`，避免后续用户输入被旧任务粘住。
 - `AwaitingUserInput` 只代表“等待本次追问的有效补充”，不得把用户后续所有输入无条件粘到旧任务上。若补充内容本身明确是闲聊、咨询、运行时事实问题、未接入对象或新的完整工程指令，后端必须记录 `ContinuationRerouted` 并重新执行入口路由；例如修改模板缺目标时用户输入“你好”，应跳出旧追问进入 `ChatOnly`。
 - 新增业务能力时，必须先定义 Skill，再在 Skill 下拆分 Intent；不得只新增孤立意图文档或让 Intent 直接绑定 Tool。
 - 写入类动作必须先 DryRun，再由用户在 WPF 中审批，最后才允许执行。
-- 全流程必须打印和记录关键流转信息，所有任务都带 `TraceId` / `SessionId` / `TaskId`。WPF 可见日志要消费后端 `AgentRun.events`，展示每个流程阶段及阶段输出；原始 stage / message 保留在文件日志中。
-- WPF 聊天区也不得直接展示 `subgrade_template`、`subgrade_template.create`、`medium`、`SubgradeTemplate.Create` 等机器码；这些只保留在 Trace / 文件日志中。
+- 全流程必须打印和记录关键流转信息，所有任务都带 `TraceId` / `SessionId` / `TaskId`。WPF 可见日志要消费后端 `AgentRun.events`，展示每个流程阶段及阶段输出；原始 stage / message 保留在文件日志中。MVP 初期调试阶段，流转日志可以把技术串和文字解释并行展示，但不能只显示机器串而缺少识别依据、规则解释和下一步。
+- WPF 聊天区不得直接展示 `subgrade_template`、`subgrade_template.create`、`medium`、`SubgradeTemplate.Create` 等机器码；流转日志可以展示这些技术标识，但必须同时给出中文解释。
 - WPF 打开 Agent Console 时必须读取后端已保存的 Provider 设置并恢复上次模型配置；API Key 只显示配置状态，不回填明文。
 - 写入类任务的确认 / 取消按钮应出现在对话区域内，不得长期固定放在发送按钮旁边。
 - 日志不得打印明文 API Key，也不得完整泄露敏感配置。
@@ -131,7 +131,7 @@ API Key 使用 Windows DPAPI 做本机用户级加密，不写入 RoadProto 仓�
 
 ## 后端启动策略
 
-WPF 可停靠 Agent Console 打开时，RoadProto 本地 `AGENT` 模块先检查：
+WPF Agent Console 打开时，RoadProto 本地 `AGENT` 模块先检查：
 
 ```text
 http://127.0.0.1:17861/health
@@ -164,7 +164,7 @@ WPF Agent Console 的交互和视觉密度参考：
 E:\Download\google\道路设计软件对话框.zip
 ```
 
-参考包中的 JS / React 代码只作为交互结构和视觉层级参考：CAD 侧边栏、聊天流、可折叠 thinking、内嵌选项按钮、滑入设置面板、模型/API 设置、深浅色切换。最终实现必须是 WPF 可停靠 Palette，不引入独立 Web 页面。
+参考包中的 JS / React 代码只作为交互结构和视觉层级参考：CAD 侧边栏、聊天流、可折叠 thinking、内嵌选项按钮、滑入设置面板、模型/API 设置、深浅色切换。最终实现必须是 AutoCAD 内 WPF Agent Console，不引入独立 Web 页面；AutoCAD 2021 当前不得回退到复杂 XAML 直接承载路径，也不得把默认入口降级为不可停靠窗口。
 
 ## 文档索引
 
@@ -172,7 +172,7 @@ E:\Download\google\道路设计软件对话框.zip
 | --- | --- |
 | `mvp_architecture.md` | Agent MVP 总体架构、仓库边界和 RoadProto 嵌入边界 |
 | `backend_service_contract.md` | 独立 Agent 后端服务职责、接口、启动和安全边界 |
-| `wpf_agent_console.md` | WPF 可停靠 Agent Console 的页面区域、状态和交互规则 |
+| `wpf_agent_console.md` | WPF Agent Console 的页面区域、状态和交互规则 |
 | `directory_and_config_structure.md` | 后续源码、配置、日志、评测样例和文档分区 |
 | `skill_system.md` | Agent / Skill / Intent 在十二层受控流程中的作用和全局规范 |
 | `intent_rule_template.md` | Agent 意图规则文档固定模板 |

@@ -145,10 +145,10 @@ Agent：请问你要操作哪个工程对象？
 前端不应只展示最终回答。至少应在日志或 thinking 区展示：
 
 ```text
-入口路由：WorkflowCandidate
-候选 Skill：subgrade_template
-原因：动作不明确
-下一步：追问用户
+--- 入口路由 Route=WorkflowCandidate（工作流候选）
+--- 候选 Skill=subgrade_template（路基模板能力域）
+--- 原因 Reason=动作不明确（用户没有说明创建、修改、删除或查询）
+--- 下一步 FollowUp=追问用户（先补齐工程动作再进入 Intent 识别）
 ```
 
 正式聊天区可只显示自然话术：

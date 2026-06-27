@@ -9,6 +9,7 @@
 #include "cad_adapter/objectarx/cross_section/SubgradeTemplateDialogBridge.h"
 
 #include "aced.h"
+#include "acedCmdNF.h"
 #include "adscodes.h"
 #include "dbapserv.h"
 #include "dbsymtb.h"
@@ -83,6 +84,25 @@ bool resolveObjectIdFromHandle(const std::wstring& handleText, AcDbObjectId& ent
 
     const AcDbHandle handle(handleText.c_str());
     return database->getAcDbObjectId(entityId, false, handle) == Acad::eOk && !entityId.isNull();
+}
+
+void zoomToEntity(const AcDbObjectId& entityId)
+{
+    if (entityId.isNull()) {
+        return;
+    }
+
+    ads_name entityName = {};
+    if (acdbGetAdsName(entityName, entityId) != Acad::eOk) {
+        return;
+    }
+
+    acedCommandS(
+        RTSTR, L"_.ZOOM",
+        RTSTR, L"_Object",
+        RTENAME, entityName,
+        RTSTR, L"",
+        RTNONE);
 }
 
 std::string wideToUtf8(const std::wstring& value)
@@ -385,6 +405,7 @@ void runSubgradeTemplateApplyDialogFileCommand()
         const auto handle = entityHandleText(entity);
         entity->close();
         acedUpdateDisplay();
+        zoomToEntity(entityId);
         writeCreatedMessage(editor, handle, response.data);
         writeAgentToolResultFile(response, true, handle, L"路基模板实体已创建。");
         return;

@@ -85,6 +85,7 @@ src/
       RoadProto.Terrain.UI/
         AgentConsolePalette.xaml
         AgentConsolePalette.xaml.cs
+        AgentConsoleSafePanel.cs
         ViewModels/
           AgentConsoleViewModel.cs
           AgentSettingsViewModel.cs
@@ -320,4 +321,4 @@ MVP 测试分为：
 - 后端单元测试：模型网关 fake provider、Schema 校验、规则、状态机、Tool Registry、DPAPI 配置保存、日志清理。
 - RoadProto 核心测试：不依赖 AutoCAD 的 Agent Schema、状态映射、工具契约和路基模板参数映射。
 - 托管 Bridge 测试：WPF Agent Console DTO、后端响应 DTO、模型设置 DTO 和请求/响应文件。
-- AutoCAD 手工验证：Ribbon 打开可停靠 Agent Console、自动启动后端、配置模型、DryRun、审批、点取插入点、生成实体、Trace 查看。
+- AutoCAD 手工验证：Ribbon 打开 Agent Console、自动启动后端、配置模型、DryRun、审批、点取插入点、生成实体、Trace 查看；AutoCAD 2021 当前以右侧停靠 `PaletteSet` + `AgentConsoleSafePanel` 作为稳定入口。

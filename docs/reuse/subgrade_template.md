@@ -7,8 +7,8 @@
 ## 可复用单元
 
 - `SubgradeTemplateModel`：道路等级、部件类型、左右侧、坡度模式、颜色、内外侧路缘石、桩号表和模板数据模型。
-- `SubgradeTemplateDefaults`：道路等级默认模板、按左右侧和部件类型生成的默认 ACI 色号、默认 RGB 颜色和默认坡度。
-- `SubgradeTemplateRules`：显示比例检查、宽度加宽计算、坡度查询、坡度外向高程换算、变化坡度固定值隔离、路缘石高度高差语义、路缘石参数归一化和路面结构层模板引用归一化规则。
+- `SubgradeTemplateDefaults`：道路等级默认模板、按左右侧和部件类型生成的默认 ACI 色号、默认 RGB 颜色和默认坡度；当前覆盖高速公路、一级公路、二级公路、三级公路、四级公路、城市快速路、城市主干路、城市次干路和城市支路。
+- `SubgradeTemplateRules`：显示比例检查、宽度加宽计算、坡度查询、坡度外向高程换算、变化坡度固定值隔离、路缘石高度高差语义、路缘石参数归一化、路面结构层模板引用归一化，以及 Agent 部件级增删改操作应用规则。
 - `SubgradeTemplateCreateService`：创建命令默认数据生成。
 - `DnSubgradeTemplateEntity`：CAD 中的独立路基模板实体显示、DWG 持久化和插入点夹点移动。
 - `SubgradeTemplateDialogBridge`：C++ 与 WPF 参数窗口之间的请求/响应文件桥接。
@@ -24,6 +24,8 @@
 - 路缘石顶部与当前部件顶部一致并保持平行，CAD 实体和 WPF 预览按部件颜色填充路缘石并加白色描边；埋深继续表示低于相邻较低起点的下埋尺寸。
 - 默认模板中所有中分带部件外侧路缘石默认启用，宽度、高度和埋深均为 `0.15`；手动新增中分带时也使用同一组默认外侧路缘石参数。
 - 默认模板初始部件不包含路缘带；`CurbStrip` 类型保留给用户手动新增。手动新增路缘带时，左侧默认 ACI 色号为 `43`、右侧为 `61`，坡度按左 `0.02`、右 `-0.02`。
+- Agent 创建路基模板时，`rules/intents/subgrade_template.create.yaml` 的 `defaultComponentsByRoadGrade` 应镜像这里的默认模板结构；RoadProto 本地 Adapter 只校验和执行，不在 `Components=0` 时自行补默认部件。
+- Agent 修改路基模板时，部件级操作应落到 `SubgradeTemplateRules::applyComponentOperation`。该规则按 `sideScope`、`componentType`、`occurrence` 匹配部件，支持 `modifyComponent` 覆盖宽度、宽度增量、坡度、颜色、内外侧路缘石、路面结构层、变宽表和坡度变化表；支持 `addComponent` 在指定锚点内侧或外侧插入新部件；支持 `deleteComponent` 删除匹配部件。Adapter 只把已归一化的操作转成领域对象，不在 ObjectARX 层重写业务规则。
 - 行车道和硬路肩默认坡度按左 `0.02`、右 `-0.02`；土路肩按左 `0.03`、右 `-0.03`；其他部件默认 `0`。几何应用按“平坡为 `0`、顺时针为负、逆时针为正”换算，左侧正坡向外降低，右侧负坡向外降低。
 - `DnSubgradeTemplateEntity` 图面标注使用中文部件名，CAD 实体中的部件标注沿横断面竖向绘制以减少模型空间横向重叠；模板名称和 `CL` 标记保持横向。WPF 预览显示部件宽度和坡度，但预览表达仍只属于 UI 辅助能力。
 - `DnSubgradeTemplateEntity` 的插入点夹点只用于移动模板图面位置，不参与模板业务参数计算。
